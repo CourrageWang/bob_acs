@@ -2,6 +2,7 @@ package com.irain.handle;
 
 import com.irain.net.impl.SerialSocketClient;
 import com.irain.utils.StringUtils;
+import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
 import java.io.*;
@@ -11,6 +12,7 @@ import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @Author: w
@@ -23,7 +25,6 @@ public class ConnectionStatus {
     private static final String DKJ_SUFFIX = "DKJ";
 
     private static final String END_FLAG = "E3";
-
 
     public static Set<String> checkDeviceStatus(String ip, int port) {
         Set<String> storeDataFromServer = new HashSet<>();
@@ -69,17 +70,33 @@ public class ConnectionStatus {
                 }
 
                 if (END_FLAG.equals(StringUtils.byteToHex(end).toUpperCase())) {
-
                     isEnd = false;
                     //存储数据做统一处理
                     storeDataFromServer.add(tmpStr.toString());
+                    //获取寄存器时间，并做校验
+                    log.info(String.format("get data form %s:%s data is %s", ip, port, storeDataFromServer));
+                    String deviceTimeStr = TimeUtils.getDeviceTimeByInput(storeDataFromServer.toString());
+                    log.info(String.format("device ip:%s port:%s system time is:%s", ip, port, deviceTimeStr));
+                    //和当请系统时间进行比对，如果时差超过10秒则出发时间重置函数
+                    String currentOSTime = TimeUtils.getStrNowtimeWithformat("yyyyMMddHHmmss");
+
+                    log.info(String.format("device %s:%s source data is:%s covert time is:%s app runnig os time is:%s", ip, String.valueOf(port)
+                            , storeDataFromServer, deviceTimeStr, currentOSTime));
+                    if (TimeUtils.getSecondsBetweenTime(currentOSTime, deviceTimeStr) >= 10) {
+                        log.info("time difference exceeds 10 seconds and trigger the time application");
+                    }
                 }
             }
             isEnd = true;//初始化读取标志位
 
-
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            //包含异常 time out  与 connection refused 则将错误信息lost返回;
+            if (e.getMessage().length() > 0) {
+                if (e.getMessage().contains("refused") || e.getMessage().contains("out")) {
+                    storeDataFromServer.add("lost");
+                    return storeDataFromServer;
+                }
+            }
         } finally {
             try {
                 //4.关闭资源

@@ -32,14 +32,12 @@ public class InfoExection {
 
     public static void execute(Map<String, String> confMap) {
         confMap.forEach((k, v) -> {
-            if (k.endsWith(DKJ_SUFFIX)) {
-                //step1 读取门禁设备的Ip和port
-                String[] addresses = StringUtils.getAddresses(v);
-                String ip = addresses[0];
-                String port = addresses[1];
-                log.info(String.format(" try to connect device %s:%s ", ip, port));
-                signsSet = SerialSocketClient.getInfoFromDevice(ip, Integer.valueOf(port));
-            }
+            //step1 读取门禁设备的Ip和port
+            String ip = k;
+            String port = 5000 + "";
+            log.info(String.format("try to connect device %s:%s ", ip, port));
+            signsSet = SerialSocketClient.getInfoFromDevice(ip, Integer.valueOf(port));
+
         });
         if (signsSet.size() > 0) {
             // 过滤数据返回有效数据

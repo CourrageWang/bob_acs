@@ -7,6 +7,7 @@ import com.irain.utils.Player;
 import com.irain.utils.StringUtils;
 import lombok.extern.log4j.Log4j;
 
+import java.awt.image.Kernel;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -28,29 +29,29 @@ public class TimeTask {
     private static DateFormat dayFormat = new SimpleDateFormat("yy-MM-dd");
     private static ScheduledExecutorService excutor = Executors.newSingleThreadScheduledExecutor();
 
-    private static final String VOICE_STREAM = "/Users/yqwang/Workspace/java/home_work_v2/src/main/resources/output.mp3";
-    private static final String DKJ_SUFFIX = "DKJ";
+    private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
+    private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
 
     /**
-     * 检测设备连接状况。
+     * 检测设备连接状况并对时间误差超过10秒的门禁设备进行校时
      */
     public void checkConnection() {
         excutor.scheduleAtFixedRate(() -> {
                     try {
                         //加载配置文件
                         new LoadConf();
-                        LoadConf.propertiesMap.forEach((k, v) -> {
-                            if (k.endsWith(DKJ_SUFFIX)) {
-                                String[] addresses = StringUtils.getAddresses(v);
-                                String ip = addresses[0];
-                                String port = addresses[1];
-                                log.info(String.format(" start check device status ip:%s port:%s", ip, port));
-                                Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.valueOf(port));
-                                if (set.size() == 0) {
-                                    log.error(String.format("device ip:%s port:%s lost connect", ip, port));
-                                    new Player().getVoice(ip, port);
-                                    new Player().playMP3Music(VOICE_STREAM);
-                                }
+                        LoadConf.devicesMap.forEach((k, v) -> {
+                            String ip = k;
+                            String port = 5000 + "";
+                            log.info(String.format(" start check device status ip:%s port:%s", ip, port));
+                            Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.valueOf(port));
+                            //设备连接异常 并写入文件按日生成
+                            if (set.contains("lost")) {
+                                new Player().playMP3Music(VOICE_LOST_CONN);
+                            }
+                            //设备故障并写入文件按日生成
+                            if (set.size() == 0) {
+                                new Player().playMP3Music(VOICE_DEVICE_ERROR);
                             }
                         });
 
@@ -80,7 +81,7 @@ public class TimeTask {
                         //加载配置文件
                         new LoadConf();
                         //开始处理输入数据
-                        InfoExection.execute(LoadConf.propertiesMap);
+                        InfoExection.execute(LoadConf.importDevicesMap);
                     } catch (Exception e) {
                         log.error("time task has error when load Data");
                     }

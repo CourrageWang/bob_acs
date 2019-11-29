@@ -12,7 +12,6 @@ import java.nio.ByteBuffer;
  * 提取记录实现
  */
 public class SignInInstruction implements InstrcutionInterface {
-
     @Override
     public String getSignInRecord(int regionIndex, int blockIndex) {
         StringBuilder sb = new StringBuilder();
