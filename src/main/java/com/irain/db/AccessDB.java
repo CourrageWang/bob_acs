@@ -1,6 +1,6 @@
 package com.irain.db;
 
-import com.irain.entity.Account;
+
 import lombok.extern.log4j.Log4j;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
 
@@ -20,7 +20,7 @@ public class AccessDB {
      *
      * @return
      */
-    public static List<Account> getAllAccount() {
+  /*  public static List<Account> getAllAccount() {
 
         String url = "jdbc:Access:///h:/Database31.mdb";
         List<Account> allColumns = null;
@@ -42,5 +42,5 @@ public class AccessDB {
             log.error("when connect Access DB happened error " + e.getMessage());
         }
         return allColumns;
-    }
+    }*/
 }

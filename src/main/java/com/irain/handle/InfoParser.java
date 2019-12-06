@@ -3,7 +3,6 @@ package com.irain.handle;
 import com.google.common.collect.ArrayListMultimap;
 import com.irain.conf.LoadConf;
 import com.irain.utils.FileUtils;
-import com.irain.utils.PropertyUtils;
 import lombok.extern.log4j.Log4j;
 
 import java.io.File;

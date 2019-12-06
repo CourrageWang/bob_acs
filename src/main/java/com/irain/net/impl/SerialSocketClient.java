@@ -1,5 +1,6 @@
 package com.irain.net.impl;
 
+import com.irain.utils.CommonUtils;
 import com.irain.utils.StringUtils;
 import lombok.extern.log4j.Log4j;
 
@@ -24,7 +25,6 @@ public class SerialSocketClient {
     private static final String END_FLAG = "E3";
     private static final String START_FLAG = "D2";
     private static final int JUMP_NUM = 240;//说明:在存储块0，区域240区域后数据无效
-    private static Map<String, String> storeDataFromServer = new HashMap<>();
 
     /**
      * 指定的设备上，指定的块与区域上发送数据
@@ -82,25 +82,12 @@ public class SerialSocketClient {
                 }
             }
         } catch (IOException e) {
-//            log.error(String.format("连接设备%s:%s出现异常:%s", ip, port, e.getMessage()));
-            e.getMessage();
+            log.error(String.format("连接设备%s:%s出现异常:%s", ip, port, e.getMessage()));
         } finally {
             try {
-                //4.关闭资源
-                if (socket != null) {
-                    socket.close();
-                }
-                if (br != null) {
-                    br.close();
-                }
-                if (is != null) {
-                    is.close();
-                }
-                if (os != null) {
-                    os.close();
-                }
+                CommonUtils.closeStream(socket, br, is, os);
             } catch (IOException e) {
-                log.error(String.format("连接设备 %s:%s 发生错误", ip, port) + e.getMessage());
+                log.error("关闭sock出现异常" + e.getMessage());
             }
         }
         return "null";

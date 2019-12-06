@@ -57,6 +57,12 @@ public class DeviceInfo {
                         boolean isTrue = true;
                         while (isTrue) {
                             infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
+
+                            try {
+                                Thread.sleep(1500);
+                            } catch (InterruptedException e) {
+                                log.error("休眠时发生异常" + e.getMessage());
+                            }
                             if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
                                 String start = infoFromDevice.substring(0, 2);
                                 if ("e2".equals(start)) {

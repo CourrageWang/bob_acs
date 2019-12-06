@@ -31,11 +31,11 @@ public interface InstrcutionInterface {
     /**
      * 控制器地址
      *
-     * @param location
+     * @param location 控制器地址
      * @param time     时间 格式为 201912021314150000
      * @return
      */
-    default String correctTime(int location, String time) {
+    default String correctTimeInstruction(int location, String time) {
         return null;
     }
 }

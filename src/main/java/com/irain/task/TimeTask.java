@@ -9,10 +9,6 @@ import com.irain.utils.Player;
 import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 @Log4j
 public class TimeTask {
 
-
     private static ScheduledExecutorService excutor = Executors.newSingleThreadScheduledExecutor();
 
     private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
@@ -34,14 +29,14 @@ public class TimeTask {
     private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
     private static final String PORT = LoadConf.propertiesMap.get("PORT");
 
-
     /**
      * 检测设备连接状况并对时间误差超过10秒的门禁设备进行校时
      */
     public void checkConnection() {
         excutor.scheduleAtFixedRate(() -> {
                     try {
-                        LoadConf.devicesMap.forEach((k, v) -> {
+                        log.info("******检测设备连接状态定时任务程序开始执行******");
+                        LoadConf.devicesMap.forEach((k,v) -> {
                             String ip = k;
                             String port = PORT;
                             log.info(String.format(" 开始检测设备数据%s:%s", ip, port));
@@ -59,7 +54,7 @@ public class TimeTask {
                                 new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备硬件异常");
                             }
                         });
-
+                        log.info("******检测设备连接状态定时任务结束******");
                     } catch (Exception e) {
                         log.error("检查设备状态时出现异常" + e.getMessage());
                     }
@@ -85,7 +80,7 @@ public class TimeTask {
                         log.info("******获取考勤数据定时任务开始执行******");
                         //开始处理输入数据
                         InfoExection.execute(LoadConf.importDevicesMap, TimeUtils.getYesterDayStr().trim());
-                        log.info("******获取考勤数据定时任务执行结束******");
+                        log.info("******获取考勤数据定时任务执行结束*******");
                     } catch (Exception e) {
                         log.error("导入数据发生异常" + e.getMessage());
                     }
@@ -94,7 +89,6 @@ public class TimeTask {
                 oneDay, //两次开始的执行的最小时间间隔
                 TimeUnit.MILLISECONDS //计时单位
         );
-
     }
 
     /**

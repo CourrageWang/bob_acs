@@ -1,18 +1,10 @@
 package com.irain;
 
 import com.irain.conf.LoadConf;
-import com.irain.handle.ConnectionStatus;
-import com.irain.handle.DeviceInfo;
-import com.irain.handle.InfoExection;
 import com.irain.task.TimeTask;
-import com.irain.utils.CheckConnectionUtils;
-import com.irain.utils.FileUtils;
-import com.irain.utils.Player;
-import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
 import java.io.*;
-import java.util.Set;
 
 /**
  * @Author: w

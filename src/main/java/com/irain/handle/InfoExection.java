@@ -25,8 +25,8 @@ public class InfoExection {
     private static final String VERF_FILE_SUFFIX = ".verf";
     private static final String DEVICE_ADDRESS = "XAZB";
 
-    public static final int BLOCK_SIZE = 0;
-    public static final int REGION_SIZE = 27;
+    public static final int BLOCK_SIZE = 3;
+    public static final int REGION_SIZE = 255;
     public static final int JUMP_INDEX = 240;
     //一个区块对应16*16条数据。
     public static final int CORRECT_LENGTH = 256;
@@ -68,6 +68,11 @@ public class InfoExection {
                     boolean isTrue = true;
                     while (isTrue) {
                         infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
+                        try {
+                            Thread.sleep(1500);
+                        } catch (InterruptedException e) {
+                            log.error("休眠时发生异常！" + e.getMessage());
+                        }
                         if ("null".equals(infoFromDevice)) { //如果返回"null"则可认为设备连接异常；
                             log.error(String.format("设备%s:%s连接异常", ip, port + ""));
                             break lable;

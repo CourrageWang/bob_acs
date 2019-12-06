@@ -53,25 +53,49 @@ public class Instruction implements InstrcutionInterface {
     /**
      * 校准寄存器地址指令
      *
-     * @param location
-     * @param time     时间格式为： 20191202131415 0000
+     * @param location 控制器地址
+     * @param time     时间格式为： 2019120213141500  2013120614244000
      * @return
      */
     @Override
-    public String correctTime(int location, String time) {
+    public String correctTimeInstruction(int location, String time) {
+        //判断传入时间长度格式是否符合要求
+        int timeLen = time.length();
+        String[] instr = new String[21];
+        if (timeLen != 16) {
+            time = time + "00";
+        }
+        instr[0] = "D2";
+        instr[1] = StringUtils.setPrefix(Integer.toHexString(location)); //第二位为控制器地址
+        instr[2] = "10";//16进制字符串
+        instr[3] = "54";//16进制字符串
         StringBuilder sb = new StringBuilder();
-        sb.append("D2");
-        sb.append(Integer.toHexString(location));
-        sb.append("10");
-        sb.append("54");
-        //time 201912221213450000
-        StringBuffer sb2 = new StringBuffer();
+        int j = 4;
+        // 第五位开始赋值时间，并给对应的数字位置前加上0
         for (int i = 0; i < time.length(); i++) {
+            StringBuffer sb2 = new StringBuffer();
             sb2.append("0");
             sb2.append(time.charAt(i));
+            instr[j] = sb2.toString();
+            j++;
         }
-        sb.append(sb2.toString());
-        int tmp = (location ^ 10 ^ 54);
+        for (int i = 0; i < instr.length - 1; i++) {
+            sb.append(instr[i]);
+        }
+        // 求异或求2-10的异或
+        instr[20] = instr[1];
+        int temp = Integer.valueOf(instr[20]);
+        for (int k = 2; k < 20; k++) {
+            if (k == 2) {
+                instr[k] = "16"; //第二位10为16进制， 转换为10进制求异或
+            }
+            if (k == 3) {
+                instr[k] = "84"; //第三位54为16进制，转换为10进制求异或关系
+            }
+            temp = temp ^ Integer.valueOf(instr[k]);
+        }
+        instr[20] = StringUtils.setPrefix(Integer.toHexString(temp)); //将所求异或关系转换为16进制后存储在第21位。
+        sb.append(instr[20]);
         return sb.toString();
     }
 }
