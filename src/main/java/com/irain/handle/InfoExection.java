@@ -1,12 +1,10 @@
 package com.irain.handle;
 
-
+import com.google.common.collect.ArrayListMultimap;
 import com.irain.conf.LoadConf;
-import com.irain.entity.VerfInfo;
+import com.irain.entity.FileInfo;
 import com.irain.net.impl.SerialSocketClient;
-import com.irain.utils.FileUtils;
-import com.irain.utils.StringUtils;
-import com.irain.utils.TimeUtils;
+import com.irain.utils.*;
 import lombok.extern.log4j.Log4j;
 
 import java.sql.Timestamp;
@@ -25,86 +23,153 @@ public class InfoExection {
     private static final String FILENAME_PREFIX = "DKJ_DKJL_";
     private static final String TEXT_FILE_SUFFIX = ".txt";
     private static final String VERF_FILE_SUFFIX = ".verf";
-    private static final String DKJ_SUFFIX = "DKJ";
-    private static final String DEVICE_ADDRESS = "HPL";
+    private static final String DEVICE_ADDRESS = "XAZB";
+
+    public static final int BLOCK_SIZE = 0;
+    public static final int REGION_SIZE = 27;
+    public static final int JUMP_INDEX = 240;
+    //一个区块对应16*16条数据。
+    public static final int CORRECT_LENGTH = 256;
+
+    public static final String YYYYMMDD = "yyyyMMdd";
+
+    //控制器端口号
+    private static final int PORT = Integer.valueOf(LoadConf.propertiesMap.get("PORT").trim());
+    //卡号到行号对应关系
+    public static final String ACCOUNT_REL = LoadConf.propertiesMap.get("CARD_ACCOUNT");
+    //获取文件存储路径
+    public static final String FILEPATH = LoadConf.propertiesMap.get("FILE_PATH");
 
     private static Set<String> signsSet = new HashSet<>();
 
-    public static void execute(Map<String, String> confMap) {
+    /**
+     * 考勤数据因读的控制器较少，为了保证数据的可靠性，采用全读的方式。
+     *
+     * @param confMap
+     * @param loadTime
+     * @return
+     */
+    public static void execute(Map<String, String> confMap, String loadTime) {
+
         confMap.forEach((k, v) -> {
             //step1 读取门禁设备的Ip和port
             String ip = k;
-            String port = 5000 + "";
-            log.info(String.format("try to connect device %s:%s ", ip, port));
-            signsSet = SerialSocketClient.getInfoFromDevice(ip, Integer.valueOf(port));
+            String infoFromDevice = "";
+            int port = PORT;
+            lable:
+            for (int block = 0; block <= BLOCK_SIZE; block++) {
+                for (int region = 0; region <= REGION_SIZE; region++) {
 
+                    //跳过0区域240块的无效数据
+                    if (block == 0 && region > JUMP_INDEX) {
+                        break;
+                    }
+
+                    boolean isTrue = true;
+                    while (isTrue) {
+                        infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
+                        if ("null".equals(infoFromDevice)) { //如果返回"null"则可认为设备连接异常；
+                            log.error(String.format("设备%s:%s连接异常", ip, port + ""));
+                            break lable;
+                        }
+                        String start = infoFromDevice.substring(0, 2);
+                        if ("e2".equals(start)) {
+                            isTrue = false;
+                            log.info(String.format("从设备 %s:%s", ip, 10001) + "数据合法为：" + infoFromDevice);
+                            String x = infoFromDevice;
+
+                            String strWithoutIdentifier = x.replaceAll("e2", "").replaceAll("e3", "");
+                            int strLen = strWithoutIdentifier.length();
+                            //判断数据长度是否符要求，不满足将在末尾追加数据
+                            if (strLen != CORRECT_LENGTH) {
+                                strWithoutIdentifier = new DEVInfoUtils().appendZeroToEnd(strWithoutIdentifier);
+                            }
+                            for (int i = 0; i < strLen; i = i + 16) {
+                                String substring = strWithoutIdentifier.substring(i, i + 16);
+                                if (substring.startsWith("bb55") || substring.startsWith("b5b5") ||
+                                        substring.startsWith("ff") || substring.startsWith("aa55") || substring.startsWith("a5a5")) {
+                                    continue;
+                                }
+                                //获取时间
+                                String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +
+                                        substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14);
+
+                                String signDay = "20" + substring.substring(4, 10);
+                                String cardNo = substring.substring(0, 4);//卡号
+                                log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
+                                //时间合法则进行操作
+                                if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
+                                    if (TimeUtils.compareDate(loadTime, signDay, YYYYMMDD) == 0) {
+                                        String userAccount = PropertyUtils.readValue(ACCOUNT_REL, cardNo);
+                                        if (userAccount.length() > 0) {
+                                            String sub = userAccount.split("@")[0] + "#" + signTime;
+                                            signsSet.add(sub);
+                                        }
+                                    } else {
+                                        // 数据不符合要求,跳过本次循环
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         });
+
         if (signsSet.size() > 0) {
+            //如果为多个打卡机，需要与之前存储在文件中的签到信息做对比并返回。
+            String fileNamePrefix = new StringBuilder().append(FILENAME_PREFIX).append(DEVICE_ADDRESS)
+                    .append(UNDER_LINE + loadTime).toString();
+            String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix)
+                    .append(TEXT_FILE_SUFFIX).toString();
             // 过滤数据返回有效数据
-            Set<String> set = InfoParser.ParserData(signsSet);
+            ArrayListMultimap<String, String> almp = InfoParser.ParserData(signsSet, textPathName);
+
+            log.debug("整合后的日期为：" + almp.toString());
             //获取打卡信息
-            getSingsInfo(set);
+            getSingsInfo(almp, loadTime);
         }
-        log.info("load data end.....");
     }
 
     /**
      * 获取打卡信息
      */
-    public static void getSingsInfo(Set<String> set) {
+    public static void getSingsInfo(ArrayListMultimap<String, String> info, String loadDate) {
 
-        //丛配置文件中获取需要查询的日期
-        String readDate = LoadConf.propertiesMap.get("READ_DATE");
-        String filePath = LoadConf.propertiesMap.get("FILE_PATH");
-        Calendar cal = Calendar.getInstance();
-        String year = cal.get(Calendar.YEAR) + ""; //获取当前年份
-        VerfInfo verfInfo = new VerfInfo();
         //组合文件路径
         String fileNamePrefix = new StringBuilder().append(FILENAME_PREFIX).
-                append(DEVICE_ADDRESS).append(UNDER_LINE + readDate).toString();
+                append(DEVICE_ADDRESS).append(UNDER_LINE + loadDate).toString();
 
-        String textPathName = new StringBuilder().append(filePath).append(fileNamePrefix).append(TEXT_FILE_SUFFIX).toString();
-        String verfPathName = new StringBuilder().append(filePath).append(fileNamePrefix).append(VERF_FILE_SUFFIX).toString();
-        set.forEach(x -> {
-            //获取指时间的数据
-            String timeStr = year.substring(0, 2) + x.substring(4, 6) + x.substring(6, 10);
-            //定时任务执行前的前一天数据
-            String loadDate = TimeUtils.getYesterDayStr();
-            if (timeStr.equals(loadDate)) {
-                String userAccount = x.substring(0, 4);
-                String punchTimeStr = timeStr + x.substring(10, 14);
-                Date punchDate = null;
-                Timestamp punchTimeStamp = null;
+        String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(TEXT_FILE_SUFFIX).toString();
+        String verfPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(VERF_FILE_SUFFIX).toString();
+
+        info.asMap().forEach((k, v) -> {
+
+            v.forEach(z -> {
                 try {
-                    punchDate = TimeUtils.timeStrToDate(punchTimeStr, "yyyyMMddHHmm");
-                    punchTimeStamp = new Timestamp(punchDate.getTime());
+                    Date punchDate = TimeUtils.timeStrToDate(loadDate, "yyyyMMdd");
+                    Timestamp punchTimeStamp = new Timestamp(TimeUtils.timeStrToDate(z, "yyyy-MM-dd HH:mm").getTime());
+
+                    String writeLine = k + '\t' + punchDate + '\t' + punchTimeStamp + '\n';
+                    // 生成记录写入文件
+                    FileUtils.writeFile(textPathName, writeLine, true);
+
                 } catch (ParseException e) {
-                    log.error("convert date err " + e.getMessage());
+                    log.error("日期格式转换异常" + e.getMessage());
                 }
+            });
 
-                // 从Access 数据库中获取数据
-
-                String writeLine = userAccount + '\t' + punchDate + '\t' + punchTimeStamp + '\n';
-                // 生成记录写入文件
-                FileUtils.writeFile(textPathName, writeLine);
-
-                //生成校验文件
-                if (verfInfo.getRecordCounts() == 0) {
-                    verfInfo.setRecordCounts(1);
-                } else {
-                    verfInfo.setRecordCounts(verfInfo.getRecordCounts() + 1);
-                }
-                if (verfInfo.getFileLength() == 0) {
-                    verfInfo.setFileLength(writeLine.length());
-                } else {
-                    verfInfo.setFileLength(writeLine.length() + verfInfo.getFileLength());
-                }
-
-            }
         });
-        //写校验文件
-        String writeVerfStr = fileNamePrefix + TEXT_FILE_SUFFIX + '\t' + verfInfo.getFileLength() + '\t' +
-                verfInfo.getRecordCounts() + '\t' + readDate + '\n';
-        FileUtils.writeFile(verfPathName, writeVerfStr);
+
+        //生成校验文件
+        FileInfo fileInfo = FileUtils.getFileInfo(textPathName);
+        log.debug("文件 长度" + fileInfo.getRecordCounts() + "---" + fileInfo.getFileLength());
+        if (fileInfo.getFileLength() > 0 && fileInfo.getRecordCounts() > 0) { //文件为空
+            //写校验文件
+            String writeVerfStr = fileNamePrefix + TEXT_FILE_SUFFIX + '\t' + fileInfo.getFileLength() + '\t' +
+                    String.valueOf(fileInfo.getRecordCounts() - 1) + '\t' + loadDate + '\n';
+            FileUtils.writeFile(verfPathName, writeVerfStr, false);
+        }
     }
 }

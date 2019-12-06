@@ -5,7 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -17,36 +16,35 @@ import java.util.Map;
 @NoArgsConstructor
 public class LoadConf {
 
-    public static Map<String, String> propertiesMap = new LinkedHashMap<>(); //存储基本配置文件；
-    public static Map<String, String> devicesMap = new LinkedHashMap<>();// 存错所有设备信息；
-    public static Map<String, String> importDevicesMap = new LinkedHashMap<>();// 存错所有设备信息；
+    public static Map<String, String> propertiesMap = new HashMap<>(); //存储基本配置文件；
+    public static Map<String, String> devicesMap = new HashMap<>();// 存错所有设备信息；
+    public static Map<String, String> importDevicesMap = new HashMap<>();// 存错所有设备信息；
     private static final String PROPERTY_PATH = "D:\\tools\\bob_acs\\src\\main\\resources\\application.properties";
-
 
     static {
         try {
-            log.info(String.format("start to load conf at:%s", PROPERTY_PATH));
+            log.info(String.format("开始加载数据:%s", PROPERTY_PATH));
             propertiesMap = FileUtils.getProperties(PROPERTY_PATH);
             if (propertiesMap.size() == 0) {
-                log.error("property file is empty please confirm");
+                log.error("基础配置文件为空");
                 System.exit(1);
             }
-            log.info("load base conf success");
+            log.info("加载基础配置完成");
             devicesMap = FileUtils.getProperties(propertiesMap.get("ALL_DEVICE"));
             if (devicesMap.size() == 0) {
-                log.error("property file is empty please confirm");
+                log.error("设备配置文件为空");
                 System.exit(1);
             }
-            log.info("load device conf success");
+            log.info("加载所有设备数据成功");
             importDevicesMap = FileUtils.getProperties(propertiesMap.get("SIGN_DEVICE"));
             if (importDevicesMap.size() == 0) {
-                log.error("property file is empty please confirm");
+                log.error("打卡设备数据为空");
                 System.exit(1);
             }
-            log.info("load sign device conf success");
+            log.info("加载打卡设备数据成功");
 
         } catch (Exception e) {
-            log.error("load config error:" + e.getMessage());
+            log.error("导入配置文件发生异常:" + e.getMessage());
             System.exit(1);
         }
     }

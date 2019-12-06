@@ -1,5 +1,6 @@
 package com.irain.utils;
 
+import com.irain.entity.FileInfo;
 import lombok.extern.log4j.Log4j;
 
 import java.io.*;
@@ -42,26 +43,33 @@ public class FileUtils {
      * @param content
      * @throws IOException
      */
-    public static void writeFile(String path, String content){
+    public static void writeFile(String path, String content, boolean isAppend) {
         FileWriter writer = null;
         try {
             // 打开一个写文件器，构造函数中的第二个参数true表示以追加形式写文件is
-            writer = new FileWriter(path, true);
-            writer.write(content );
-            log.info(String.format("Successfully written to file %s and length is %d ", path, content.length()));
+            writer = new FileWriter(path, isAppend);
+            writer.write(content);
+            log.info(String.format("成功写入文件 %s 写入长度为 %d ", path, content.length()));
         } catch (IOException e) {
-            log.error(String.format("when write %s%d has occured error") + e.getMessage());
+            log.error(String.format("写文件%s发生异常", path) + e.getMessage());
         } finally {
             try {
                 if (writer != null) {
                     writer.close();
                 }
             } catch (IOException e) {
-                log.error(String.format("when write %s%d has occured error") + e.getMessage());
+                log.error(String.format("写文件%s发生异常", path) + e.getMessage());
             }
         }
     }
 
+    /**
+     * 读取配置文件
+     *
+     * @param filePath
+     * @return
+     * @throws Exception
+     */
     public static Map<String, String> getProperties(String filePath) throws Exception {
         Map map = new HashMap<String, Integer>();
         Properties p = new Properties();
@@ -82,5 +90,44 @@ public class FileUtils {
                 }
             }
         }
+    }
+
+    public static FileInfo getFileInfo(String filePath) {
+        File file = new File(filePath);
+        FileInfo f = new FileInfo();
+        FileReader fileReader = null;
+        LineNumberReader lineNumberReader = null;
+
+        if (file.exists()) {
+            try {
+                fileReader = new FileReader(file);
+                lineNumberReader = new LineNumberReader(fileReader);
+                lineNumberReader.skip(Long.MAX_VALUE);
+                int lines = lineNumberReader.getLineNumber() + 1;
+                long length = file.length();
+                return new FileInfo(length, lines);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (fileReader != null) {
+                    try {
+                        fileReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                if (lineNumberReader != null) {
+                    try {
+                        lineNumberReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        return new FileInfo(0, 0);
+
     }
 }

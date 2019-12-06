@@ -2,12 +2,13 @@ package com.irain.task;
 
 import com.irain.conf.LoadConf;
 import com.irain.handle.ConnectionStatus;
+import com.irain.handle.DeviceInfo;
 import com.irain.handle.InfoExection;
+import com.irain.utils.CheckConnectionUtils;
 import com.irain.utils.Player;
-import com.irain.utils.StringUtils;
+import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
-import java.awt.image.Kernel;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -25,12 +26,14 @@ import java.util.concurrent.TimeUnit;
 @Log4j
 public class TimeTask {
 
-    private static DateFormat dateFormat = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
-    private static DateFormat dayFormat = new SimpleDateFormat("yy-MM-dd");
+
     private static ScheduledExecutorService excutor = Executors.newSingleThreadScheduledExecutor();
 
     private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
     private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
+    private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
+    private static final String PORT = LoadConf.propertiesMap.get("PORT");
+
 
     /**
      * 检测设备连接状况并对时间误差超过10秒的门禁设备进行校时
@@ -38,25 +41,27 @@ public class TimeTask {
     public void checkConnection() {
         excutor.scheduleAtFixedRate(() -> {
                     try {
-                        //加载配置文件
-                        new LoadConf();
                         LoadConf.devicesMap.forEach((k, v) -> {
                             String ip = k;
-                            String port = 5000 + "";
-                            log.info(String.format(" start check device status ip:%s port:%s", ip, port));
+                            String port = PORT;
+                            log.info(String.format(" 开始检测设备数据%s:%s", ip, port));
                             Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.valueOf(port));
                             //设备连接异常 并写入文件按日生成
+                            String writeLine = "";
                             if (set.contains("lost")) {
                                 new Player().playMP3Music(VOICE_LOST_CONN);
+                                //按天生成文件
+                                new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备连接异常");
                             }
                             //设备故障并写入文件按日生成
                             if (set.size() == 0) {
                                 new Player().playMP3Music(VOICE_DEVICE_ERROR);
+                                new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备硬件异常");
                             }
                         });
 
                     } catch (Exception e) {
-                        log.error("when check device status has happened error" + e.getMessage());
+                        log.error("检查设备状态时出现异常" + e.getMessage());
                     }
                 },
                 0,  //初始化延迟
@@ -66,45 +71,54 @@ public class TimeTask {
     }
 
     /**
-     * 每天指定时间同部署数据
+     * 每天指定时间获取考勤数据
      *
      * @param time
      */
-    public void dayOfLoadData(String time) {
+    public void dayOfLoadSignData(String time) {
+
         long oneDay = 24 * 60 * 60 * 1000;
-        long initDelay = getTimeMillis(time) - System.currentTimeMillis();
+        long initDelay = TimeUtils.getTimeMillis(time) - System.currentTimeMillis();
         initDelay = initDelay > 0 ? initDelay : oneDay + initDelay;
         excutor.scheduleAtFixedRate(() -> {
                     try {
-                        log.info("start time task dayOfLoadData");
-                        log.info("--------irain net_pack_parser application start-----------");
-                        //加载配置文件
-                        new LoadConf();
+                        log.info("******获取考勤数据定时任务开始执行******");
                         //开始处理输入数据
-                        InfoExection.execute(LoadConf.importDevicesMap);
+                        InfoExection.execute(LoadConf.importDevicesMap, TimeUtils.getYesterDayStr().trim());
+                        log.info("******获取考勤数据定时任务执行结束******");
                     } catch (Exception e) {
-                        log.error("time task has error when load Data");
+                        log.error("导入数据发生异常" + e.getMessage());
                     }
                 },
                 initDelay,  //初始化延迟
                 oneDay, //两次开始的执行的最小时间间隔
                 TimeUnit.MILLISECONDS //计时单位
         );
+
     }
 
     /**
-     * 获取给定时间对应的毫秒数
+     * 每天指定时间获取所有设备前一天的打卡数据
      *
-     * @param time "HH:mm:ss"
-     * @return
+     * @param time
      */
-    private static long getTimeMillis(String time) {
-        try {
-            Date currentDate = dateFormat.parse(dayFormat.format(new Date()) + " " + time);
-            return currentDate.getTime();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-        return 0;
+    public void dayOfLoadAllDeviceData(String time) {
+        long oneDay = 24 * 60 * 60 * 1000;
+        long initDelay = TimeUtils.getTimeMillis(time) - System.currentTimeMillis();
+        initDelay = initDelay > 0 ? initDelay : oneDay + initDelay;
+        excutor.scheduleAtFixedRate(() -> {
+                    try {
+                        log.info("~~~~~~定时任务开始导入打卡数据~~~~~~");
+                        new DeviceInfo().loadAllDeviceData(LoadConf.devicesMap, TimeUtils.getYesterDayStr().trim());
+                        log.info("~~~~~~定时任务开始导入打卡数据~~~~~~");
+                    } catch (Exception e) {
+                        log.error("定时任务执行过程中发生异常" + e.getMessage());
+                        e.printStackTrace();
+                    }
+                },
+                initDelay,  //初始化延迟
+                oneDay, //两次开始的执行的最小时间间隔
+                TimeUnit.MILLISECONDS //计时单位
+        );
     }
 }

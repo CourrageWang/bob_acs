@@ -1,5 +1,7 @@
 package com.irain.utils;
 
+import lombok.extern.log4j.Log4j;
+
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -11,7 +13,10 @@ import java.util.Date;
  * @Date: 2019/11/15 9:24 上午
  * 日期工具类
  */
+@Log4j
 public class TimeUtils {
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yy-MM-dd HH:mm:ss");
+    private static final DateFormat DAY_FORMAT = new SimpleDateFormat("yy-MM-dd");
 
     /**
      * 字符串类型的time转换为Date类型
@@ -46,7 +51,7 @@ public class TimeUtils {
     public static String getYesterDayStr() {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.DATE, -1);
-        return new SimpleDateFormat("yyyyMMdd ").format(cal.getTime());
+        return new SimpleDateFormat("yyyyMMdd").format(cal.getTime());
     }
 
     /**
@@ -104,5 +109,81 @@ public class TimeUtils {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * 获取给定时间对应的毫秒数
+     *
+     * @param time "HH:mm:ss"
+     * @return
+     */
+    public static long getTimeMillis(String time) {
+        try {
+            Date currentDate = DATE_FORMAT.parse(DAY_FORMAT.format(new Date()) + " " + time);
+            return currentDate.getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /**
+     * 比较两个时间 当前一个时间大于后一个时间则返回1 ，小于返回-1 相等返回0
+     *
+     * @param Date1
+     * @param Date2
+     * @param format
+     * @return
+     */
+    public static int compareDate(String Date1, String Date2, String format) {
+        DateFormat df = new SimpleDateFormat(format);
+        try {
+            Date date1 = df.parse(Date1);
+            Date date2 = df.parse(Date2);
+            return date1.compareTo(date2);
+        } catch (Exception e) {
+            log.error("日期格式数据存在异常" + e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * 获取当前月份的季度数
+     *
+     * @return
+     */
+    public static String getSeason() {
+        Calendar now = Calendar.getInstance();
+        int month = now.get(Calendar.MONTH) + 1;
+        if (month == 1 | month == 2 || month == 3) {
+            return "one";
+        } else if (month == 4 || month == 5 || month == 6) {
+            return "two";
+        } else if (month == 7 || month == 8 || month == 9) {
+            return "three";
+        } else if (month == 10 || month == 11 || month == 12) {
+            return "four";
+        }
+        return "";
+    }
+
+    /**
+     * 检验时间是否合法
+     *
+     * @param str     原始数据
+     * @param formats 日期格式
+     * @return
+     */
+    public static boolean isValidDate(String str, String formats) {
+        boolean convertSuccess = true;// 指定日期格式为四位年/两位月份/两位日期，注意yyyy/MM/dd区分大小写；
+        SimpleDateFormat sdf = new SimpleDateFormat(formats);
+        try {// 设置lenient为false.否则SimpleDateFormat会比较宽松地验证日期，比如2007/02/29会被接受，并转换成2007/03/01
+            sdf.setLenient(false);
+            sdf.parse(str);
+        } catch (ParseException e) { // e.printStackTrace();
+            // 如果throw java.text.ParseException或者NullPointerException，就说明格式不对
+            convertSuccess = false;
+        }
+        return convertSuccess;
     }
 }

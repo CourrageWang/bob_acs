@@ -23,22 +23,22 @@ public class ExcelUtils {
      * @param filePath
      * @param listsOfSheets
      */
-    public void createExcelWithSheets(String filePath, List<String> listsOfSheets) {
+    public void createExcelWithSheets(String filePath, String sheetName) {
 
         if (filePath.length() > 0 && filePath.endsWith(".xls")) {
             FileOutputStream out = null;
             try {
                 Workbook workbook = new XSSFWorkbook();//创建excel文件对象
                 //创建sheets
-                listsOfSheets.stream().forEach(x -> workbook.createSheet(x));
+                workbook.createSheet(sheetName);
                 //创建每一张表格的第一行
-                for (int i = 0; i < listsOfSheets.size(); i++) {
-                    Sheet sheet = workbook.getSheet(listsOfSheets.get(i));
-                    Row row = sheet.createRow(0);
-                    row.createCell(0).setCellValue("打卡时间");
-                    row.createCell(1).setCellValue("姓名");
-                    row.createCell(2).setCellValue("卡号");
-                }
+
+                Sheet sheet = workbook.getSheet(sheetName);
+                Row row = sheet.createRow(0);
+                row.createCell(0).setCellValue("人员编号");
+                row.createCell(1).setCellValue("日期");
+                row.createCell(2).setCellValue("控制器号");
+
                 out = new FileOutputStream(filePath);
                 workbook.write(out);
                 out.close();
@@ -79,7 +79,7 @@ public class ExcelUtils {
             out = new FileOutputStream(filePath);  //向文件中写数据
             row = sheet.createRow((short) (sheet.getLastRowNum() + 1)); //在现有行号后追加数据
 
-            String[] split = content.split(":");
+            String[] split = content.split("#");
             for (int i = 0; i < split.length; i++) {
                 row.createCell(i).setCellValue(split[i]);
             }

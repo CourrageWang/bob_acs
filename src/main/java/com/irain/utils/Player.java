@@ -1,11 +1,6 @@
 package com.irain.utils;
 
-import com.baidu.aip.speech.AipSpeech;
-import com.baidu.aip.speech.TtsResponse;
-import com.baidu.aip.util.Util;
-import com.irain.conf.LoadConf;
 import lombok.extern.log4j.Log4j;
-import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -41,41 +36,6 @@ public class Player {
             player.close();
         } catch (Exception e) {
             System.out.println(e.getMessage());
-        }
-    }
-
-    /**
-     * 调用百度API获取语音合成
-     *
-     * @param Ip
-     * @param port
-     */
-    public static void getVoice(String Ip, String port) {
-
-        new LoadConf();
-        // 初始化一个AipSpeech
-        AipSpeech client = new AipSpeech(LoadConf.propertiesMap.get("APP_ID"), LoadConf.propertiesMap.get("API_KEY"),
-                LoadConf.propertiesMap.get("SECRET_KEY"));
-
-        //设置网络连接参数
-        client.setConnectionTimeoutInMillis(2000);
-        client.setSocketTimeoutInMillis(60000);
-
-        String content = String.format("Ip地址为%s端口为%s的设备连接异常，请重新连接", Ip, port);
-
-        // 调用接口
-        TtsResponse res = client.synthesis(content, "zh", 1, null);
-        byte[] data = res.getData();
-        JSONObject res1 = res.getResult();
-        if (data != null) {
-            try {
-                Util.writeBytesToFileSystem(data, "/Users/yqwang/Workspace/java/home_work_v2/src/main/resources/output.mp3");
-            } catch (IOException e) {
-                log.error("Failed to synthesize speech" + e.getMessage());
-            }
-        }
-        if (res1 != null) {
-            log.info(res1.toString(2));
         }
     }
 }

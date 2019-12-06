@@ -76,17 +76,17 @@ public class StringUtils {
         return sb.toString();
     }
 
-    /**
-     * 字节转换为16进制字符串
-     *
-     * @param b
-     * @return
-     */
-    public static String byteToHex(byte b) {
-        String hex = Integer.toHexString(b & 0xFF);
-        if (hex.length() < 2) {
-            hex = "0" + hex;
+        /**
+         * 字节转换为16进制字符串
+         *
+         * @param b
+         * @return
+         */
+        public static String byteToHex(byte b) {
+            String hex = Integer.toHexString(b & 0xFF);
+            if (hex.length() < 2) {
+                hex = "0" + hex;
+            }
+            return hex;
         }
-        return hex;
-    }
 }
