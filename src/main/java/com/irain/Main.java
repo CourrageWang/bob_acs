@@ -3,7 +3,6 @@ package com.irain;
 import com.irain.conf.LoadConf;
 import com.irain.task.TimeTask;
 import lombok.extern.log4j.Log4j;
-
 import java.io.*;
 
 /**
@@ -13,6 +12,12 @@ import java.io.*;
  */
 @Log4j
 public class Main {
+
+    private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
+    private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
+    private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
+    private static final String PORT = LoadConf.propertiesMap.get("PORT");
+
     public static void main(String[] args) throws UnsupportedEncodingException {
         log.info("---------------程序开始执行-----------------");
         //加载配置文件

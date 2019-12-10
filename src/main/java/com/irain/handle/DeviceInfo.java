@@ -58,11 +58,6 @@ public class DeviceInfo {
                         while (isTrue) {
                             infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
 
-                            try {
-                                Thread.sleep(1500);
-                            } catch (InterruptedException e) {
-                                log.error("休眠时发生异常" + e.getMessage());
-                            }
                             if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
                                 String start = infoFromDevice.substring(0, 2);
                                 if ("e2".equals(start)) {
@@ -83,8 +78,12 @@ public class DeviceInfo {
                                     }
                                     for (int i = 0; i < strLen; i = i + 16) {
                                         String substring = strWithoutIdentifier.substring(i, i + 16);
-                                        if (substring.startsWith("bb55") || substring.startsWith("b5b5") || substring.startsWith("ff")) {
+                                        if (substring.startsWith("bb55") || substring.startsWith("b5b5")) {
                                             continue;
+                                        }
+
+                                        if (substring.startsWith("ff")) {
+                                            break loop;
                                         }
                                         //获取时间
                                         String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +

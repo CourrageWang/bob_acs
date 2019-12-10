@@ -23,13 +23,11 @@ public class InfoExection {
     private static final String FILENAME_PREFIX = "DKJ_DKJL_";
     private static final String TEXT_FILE_SUFFIX = ".txt";
     private static final String VERF_FILE_SUFFIX = ".verf";
-    private static final String DEVICE_ADDRESS = "XAZB";
+    private static final String DEVICE_ADDRESS = "XA";
 
     public static final int BLOCK_SIZE = 3;
     public static final int REGION_SIZE = 255;
     public static final int JUMP_INDEX = 240;
-    //一个区块对应16*16条数据。
-    public static final int CORRECT_LENGTH = 256;
 
     public static final String YYYYMMDD = "yyyyMMdd";
 
@@ -68,11 +66,7 @@ public class InfoExection {
                     boolean isTrue = true;
                     while (isTrue) {
                         infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
-                        try {
-                            Thread.sleep(1500);
-                        } catch (InterruptedException e) {
-                            log.error("休眠时发生异常！" + e.getMessage());
-                        }
+
                         if ("null".equals(infoFromDevice)) { //如果返回"null"则可认为设备连接异常；
                             log.error(String.format("设备%s:%s连接异常", ip, port + ""));
                             break lable;
@@ -82,33 +76,39 @@ public class InfoExection {
                             isTrue = false;
                             log.info(String.format("从设备 %s:%s", ip, 10001) + "数据合法为：" + infoFromDevice);
                             String x = infoFromDevice;
-
                             String strWithoutIdentifier = x.replaceAll("e2", "").replaceAll("e3", "");
                             int strLen = strWithoutIdentifier.length();
                             //判断数据长度是否符要求，不满足将在末尾追加数据
-                            if (strLen != CORRECT_LENGTH) {
+                            if (strLen % 16 != 0) {
                                 strWithoutIdentifier = new DEVInfoUtils().appendZeroToEnd(strWithoutIdentifier);
                             }
                             for (int i = 0; i < strLen; i = i + 16) {
+
                                 String substring = strWithoutIdentifier.substring(i, i + 16);
-                                if (substring.startsWith("bb55") || substring.startsWith("b5b5") ||
-                                        substring.startsWith("ff") || substring.startsWith("aa55") || substring.startsWith("a5a5")) {
+                                if (substring.startsWith("bb55") || substring.startsWith("b5b5") || substring.startsWith("aa55") || substring.startsWith("a5a5")) {
                                     continue;
                                 }
+                                // 如果以ff开头则跳出循环
+                                if (substring.startsWith("ff")) {
+                                    continue lable;
+                                }
+
                                 //获取时间
                                 String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +
                                         substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14);
 
                                 String signDay = "20" + substring.substring(4, 10);
                                 String cardNo = substring.substring(0, 4);//卡号
-                                log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
+//                                log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
                                 //时间合法则进行操作
                                 if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
                                     if (TimeUtils.compareDate(loadTime, signDay, YYYYMMDD) == 0) {
                                         String userAccount = PropertyUtils.readValue(ACCOUNT_REL, cardNo);
-                                        if (userAccount.length() > 0) {
-                                            String sub = userAccount.split("@")[0] + "#" + signTime;
-                                            signsSet.add(sub);
+                                        if (userAccount != null) {
+                                            if (userAccount.length() > 0) {
+                                                String sub = userAccount.split("@")[0] + "#" + signTime;
+                                                signsSet.add(sub);
+                                            }
                                         }
                                     } else {
                                         // 数据不符合要求,跳过本次循环

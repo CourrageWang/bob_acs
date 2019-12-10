@@ -36,13 +36,12 @@ public class TimeTask {
         excutor.scheduleAtFixedRate(() -> {
                     try {
                         log.info("******检测设备连接状态定时任务程序开始执行******");
-                        LoadConf.devicesMap.forEach((k,v) -> {
+                        LoadConf.devicesMap.forEach((k, v) -> {
                             String ip = k;
                             String port = PORT;
                             log.info(String.format(" 开始检测设备数据%s:%s", ip, port));
                             Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.valueOf(port));
                             //设备连接异常 并写入文件按日生成
-                            String writeLine = "";
                             if (set.contains("lost")) {
                                 new Player().playMP3Music(VOICE_LOST_CONN);
                                 //按天生成文件

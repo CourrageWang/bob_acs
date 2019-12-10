@@ -41,9 +41,9 @@ public class ConnectionStatus {
         try {
             socket = new Socket();
             SocketAddress socketAddress = new InetSocketAddress(ip, port);
+            log.debug(String.format("连接设备%s:%s", ip, port));
             socket.connect(socketAddress, 3000);
             socket.setSoTimeout(5000);//5秒没有数据则将抛出异常
-            log.debug(String.format("连接设备%s:%s", ip, port));
             //2.得到socket读写流
             os = socket.getOutputStream();
             is = socket.getInputStream();
@@ -52,7 +52,7 @@ public class ConnectionStatus {
 
             //获取寄存器地址
             int location = Integer.valueOf(ip.split("\\.")[3]);
-            String instruction = new Instruction().getDeviceTime(1);
+            String instruction = new Instruction().getDeviceTime(location);
 
             log.info("设备" + ip + ":" + port + "发送指令" + instruction);
             os.write(StringUtils.hexStringToByteArray(instruction));
@@ -105,17 +105,18 @@ public class ConnectionStatus {
 
                             CommonUtils.closeStream(socket, br, is, os);
                             // 发送校时操作
-                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
-                            if (b) {
-                                log.debug("校时操作成功");
-                            }
-                            log.debug("完成校时操作");
+//                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
+//                            if (b) {
+//                                log.debug("校时操作成功");
+//                            }
+//                            log.debug("完成校时操作");
                         }
                     }
                 }
             }
 
         } catch (IOException e) {
+            e.printStackTrace();
             //包含异常 time out  与 connection refused 则将错误信息lost返回;
             if (e.getMessage().length() > 0) {
 

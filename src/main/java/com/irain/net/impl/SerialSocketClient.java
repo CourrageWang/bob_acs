@@ -8,8 +8,6 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @Author: w
@@ -19,12 +17,7 @@ import java.util.Map;
 @Log4j
 public class SerialSocketClient {
 
-    private static final int BUFFER_SIZE = 1024 * 2;
-    private static final int BLOCK_SIZE = 3;
-    private static final int REGION_SIZE = 255;
     private static final String END_FLAG = "E3";
-    private static final String START_FLAG = "D2";
-    private static final int JUMP_NUM = 240;//说明:在存储块0，区域240区域后数据无效
 
     /**
      * 指定的设备上，指定的块与区域上发送数据
@@ -46,10 +39,19 @@ public class SerialSocketClient {
         InputStream is = null;
         BufferedReader br = null;
         try {
+
             //连接socket 并指定连接时长为3秒
             socket = new Socket();
             SocketAddress socketAddress = new InetSocketAddress(ip, port);
-            socket.connect(socketAddress, 3000);
+            socket.connect(socketAddress, 60000);
+//            socket.setSoTimeout(5000);//读数据超时时间
+
+            try {
+                Thread.sleep(1000);
+                System.out.println("程序休眠两秒");
+            } catch (InterruptedException e) {
+                log.error("休眠时发生异常！" + e.getMessage());
+            }
 
             log.info(String.format("连接设备 %s:%s 成功", ip, port));
             //2.得到socket读写流
@@ -59,7 +61,7 @@ public class SerialSocketClient {
             log.info("程序开始发送查询指令");
 
             int location = Integer.valueOf(ip.split("\\.")[3]);
-            sendData(block, region, 1, os);
+            sendData(block, region, location, os);
             StringBuilder tmpStr = new StringBuilder();
 
             while (isEnd) {
@@ -68,7 +70,7 @@ public class SerialSocketClient {
                 int readLength = is.read(buffer);
                 outputStream.write(buffer, 0, readLength);
 
-                log.error(String.format("从 %s:%s 块: %d 区域: %d 获取的数据长度为： %d", ip, port, block, region, readLength));
+//                log.debug(String.format("从 %s:%s 块: %d 区域: %d 获取的数据长度为： %d", ip, port, block, region, readLength));
                 byte[] bytes = outputStream.toByteArray();
                 byte end = bytes[bytes.length - 1]; //结束标志位
 
@@ -77,7 +79,7 @@ public class SerialSocketClient {
                     tmpStr.append(hex);
                 }
 
-                if ("E3".equals(StringUtils.byteToHex(end).toUpperCase())) {
+                if (END_FLAG.equals(StringUtils.byteToHex(end).toUpperCase())) {
                     return tmpStr.toString();
                 }
             }
@@ -85,10 +87,20 @@ public class SerialSocketClient {
             log.error(String.format("连接设备%s:%s出现异常:%s", ip, port, e.getMessage()));
         } finally {
             try {
+                //发送结束字符
+//                log.debug("向服务端发送结束字符");
+                os.write(StringUtils.hexStringToByteArray("00"));
+                os.flush();
+//                log.debug("开始关闭socket 连接");
                 CommonUtils.closeStream(socket, br, is, os);
             } catch (IOException e) {
                 log.error("关闭sock出现异常" + e.getMessage());
             }
+        }
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return "null";
     }
