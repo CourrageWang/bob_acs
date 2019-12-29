@@ -4,11 +4,14 @@ import com.irain.conf.LoadConf;
 import com.irain.handle.ConnectionStatus;
 import com.irain.handle.DeviceInfo;
 import com.irain.handle.InfoExection;
+import com.irain.swing.ErrorDialog;
 import com.irain.utils.CheckConnectionUtils;
+import com.irain.utils.CommonUtils;
 import com.irain.utils.Player;
 import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,6 +31,9 @@ public class TimeTask {
     private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
     private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
     private static final String PORT = LoadConf.propertiesMap.get("PORT");
+    private static final Map<String, String> devicesMap = LoadConf.devicesMap;
+
+    // 程序备份数据路径
 
     /**
      * 检测设备连接状况并对时间误差超过10秒的门禁设备进行校时
@@ -44,12 +50,23 @@ public class TimeTask {
                             //设备连接异常 并写入文件按日生成
                             if (set.contains("lost")) {
                                 new Player().playMP3Music(VOICE_LOST_CONN);
+
+                                //弹出对话框
+                                if (LoadConf.jFrame == null) {
+                                    ErrorDialog.getInstance().label.setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
+                                }
+                                ErrorDialog.label.setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
                                 //按天生成文件
                                 new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备连接异常");
                             }
                             //设备故障并写入文件按日生成
                             if (set.size() == 0) {
                                 new Player().playMP3Music(VOICE_DEVICE_ERROR);
+                                //弹出对话框
+                                if (LoadConf.jFrame == null) {
+                                    ErrorDialog.getInstance().label.setText(String.format("%s:%s设备硬件异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
+                                }
+                                ErrorDialog.label.setText(String.format("%s:%s设备硬件异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
                                 new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备硬件异常");
                             }
                         });
@@ -106,7 +123,6 @@ public class TimeTask {
                         log.info("~~~~~~定时任务开始导入打卡数据~~~~~~");
                     } catch (Exception e) {
                         log.error("定时任务执行过程中发生异常" + e.getMessage());
-                        e.printStackTrace();
                     }
                 },
                 initDelay,  //初始化延迟

@@ -36,14 +36,13 @@ public class ConnectionStatus {
         Socket socket = null;
         OutputStream os = null;
         InputStream is = null;
-        BufferedReader br = null;
 
         try {
             socket = new Socket();
             SocketAddress socketAddress = new InetSocketAddress(ip, port);
             log.debug(String.format("连接设备%s:%s", ip, port));
             socket.connect(socketAddress, 3000);
-            socket.setSoTimeout(5000);//5秒没有数据则将抛出异常
+            socket.setSoTimeout(10000);//5秒没有数据则将抛出异常
             //2.得到socket读写流
             os = socket.getOutputStream();
             is = socket.getInputStream();
@@ -57,7 +56,6 @@ public class ConnectionStatus {
             log.info("设备" + ip + ":" + port + "发送指令" + instruction);
             os.write(StringUtils.hexStringToByteArray(instruction));
             os.flush();
-//            socket.shutdownOutput();
 
             try {
                 Thread.sleep(1000);
@@ -103,7 +101,7 @@ public class ConnectionStatus {
                             String correctTimeIns = new Instruction().correctTimeInstruction(1, currentOSTime);
                             log.debug("校时操作发送指令为" + correctTimeIns);
 
-                            CommonUtils.closeStream(socket, br, is, os);
+                            // CommonUtils.closeStream(socket, br, is, os);
                             // 发送校时操作
 //                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
 //                            if (b) {
@@ -116,7 +114,7 @@ public class ConnectionStatus {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             //包含异常 time out  与 connection refused 则将错误信息lost返回;
             if (e.getMessage().length() > 0) {
 
@@ -135,7 +133,7 @@ public class ConnectionStatus {
             }
         } finally {
             try {
-                CommonUtils.closeStream(socket, br, is, os);
+                CommonUtils.closeStream(socket, is, os);
             } catch (IOException e) {
                 log.error("关闭sock出现异常" + e.getMessage());
             }

@@ -3,7 +3,6 @@ package com.irain;
 import com.irain.conf.LoadConf;
 import com.irain.task.TimeTask;
 import lombok.extern.log4j.Log4j;
-import java.io.*;
 
 /**
  * @Author: w
@@ -13,12 +12,7 @@ import java.io.*;
 @Log4j
 public class Main {
 
-    private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
-    private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
-    private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
-    private static final String PORT = LoadConf.propertiesMap.get("PORT");
-
-    public static void main(String[] args) throws UnsupportedEncodingException {
+    public static void main(String[] args) {
         log.info("---------------程序开始执行-----------------");
         //加载配置文件
         new LoadConf();
@@ -30,5 +24,6 @@ public class Main {
 
         //每天凌晨四点开始将所有打卡机上的数据同步，并通过增量的方式存储在指定的excel文件夹下；
         new TimeTask().dayOfLoadAllDeviceData("03:00:00");
+
     }
 }

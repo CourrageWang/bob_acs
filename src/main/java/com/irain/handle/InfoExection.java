@@ -1,14 +1,18 @@
 package com.irain.handle;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.irain.conf.LoadConf;
 import com.irain.entity.FileInfo;
 import com.irain.net.impl.SerialSocketClient;
+import com.irain.os.ShareData;
 import com.irain.utils.*;
 import lombok.extern.log4j.Log4j;
 
-import java.sql.Timestamp;
-import java.text.ParseException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.*;
 
 /**
@@ -31,14 +35,20 @@ public class InfoExection {
 
     public static final String YYYYMMDD = "yyyyMMdd";
 
+    public static final char SPACE = (char) Integer.parseInt("1");
+    public static final String VERF_SPACE = " ";
+    public static final char END_LINE = (char) Integer.parseInt("10");
+
     //控制器端口号
     private static final int PORT = Integer.valueOf(LoadConf.propertiesMap.get("PORT").trim());
     //卡号到行号对应关系
     public static final String ACCOUNT_REL = LoadConf.propertiesMap.get("CARD_ACCOUNT");
-    //获取文件存储路径
+    //获取文件存储路径[考勤数据存储路径]
     public static final String FILEPATH = LoadConf.propertiesMap.get("FILE_PATH");
+    //备份主机的路径
+    public static final String BACKUPS_ADDRESS = LoadConf.propertiesMap.get("BACKUPS_ADDRESS");
 
-    private static Set<String> signsSet = new HashSet<>();
+    private static List<String> signsList = new ArrayList<>();
 
     /**
      * 考勤数据因读的控制器较少，为了保证数据的可靠性，采用全读的方式。
@@ -52,12 +62,28 @@ public class InfoExection {
         confMap.forEach((k, v) -> {
             //step1 读取门禁设备的Ip和port
             String ip = k;
-            String infoFromDevice = "";
             int port = PORT;
+            Socket socket = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(ip, port);
+            log.info(String.format("成功连接设备%s:%s", ip, port));
+            OutputStream os = null;
+            InputStream is = null;
+            try {
+                socket.connect(socketAddress, 6000);
+                socket.setSoTimeout(10000);//读数据超时时间
+                //2.得到socket读写流
+                os = socket.getOutputStream();
+                is = socket.getInputStream();
+            } catch (IOException e) {
+                //连接异常或者读超时异常。
+                log.error(String.format("连接设备%s:%s出现异常", ip, port) + e.getMessage());
+            }
+            //创建socket
+            String infoFromDevice = "";
+
             lable:
             for (int block = 0; block <= BLOCK_SIZE; block++) {
                 for (int region = 0; region <= REGION_SIZE; region++) {
-
                     //跳过0区域240块的无效数据
                     if (block == 0 && region > JUMP_INDEX) {
                         break;
@@ -65,17 +91,25 @@ public class InfoExection {
 
                     boolean isTrue = true;
                     while (isTrue) {
-                        infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
+                        int location = Integer.valueOf(ip.split("\\.")[3]);
+                        infoFromDevice = SerialSocketClient.getInfoFromDevice(block, region, location, os, is);
 
                         if ("null".equals(infoFromDevice)) { //如果返回"null"则可认为设备连接异常；
                             log.error(String.format("设备%s:%s连接异常", ip, port + ""));
-                            break lable;
+//                            break lable;
+                            region++;
                         }
                         String start = infoFromDevice.substring(0, 2);
                         if ("e2".equals(start)) {
                             isTrue = false;
                             log.info(String.format("从设备 %s:%s", ip, 10001) + "数据合法为：" + infoFromDevice);
+
+                            //判断是否存在整页数据为空的现象
                             String x = infoFromDevice;
+                            if (x.substring(2, x.length() - 2).startsWith("ff")) {
+                                break lable;
+                            }
+
                             String strWithoutIdentifier = x.replaceAll("e2", "").replaceAll("e3", "");
                             int strLen = strWithoutIdentifier.length();
                             //判断数据长度是否符要求，不满足将在末尾追加数据
@@ -95,7 +129,7 @@ public class InfoExection {
 
                                 //获取时间
                                 String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +
-                                        substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14);
+                                        substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14) + ":00";
 
                                 String signDay = "20" + substring.substring(4, 10);
                                 String cardNo = substring.substring(0, 4);//卡号
@@ -107,7 +141,7 @@ public class InfoExection {
                                         if (userAccount != null) {
                                             if (userAccount.length() > 0) {
                                                 String sub = userAccount.split("@")[0] + "#" + signTime;
-                                                signsSet.add(sub);
+                                                signsList.add(sub);
                                             }
                                         }
                                     } else {
@@ -120,27 +154,36 @@ public class InfoExection {
                     }
                 }
             }
+
+            try {
+                log.info("关闭连接！！");
+                CommonUtils.closeStream(socket, is, os);
+            } catch (IOException e) {
+                log.error(String.format("关闭连接%s:%s出现异常", ip, port));
+            }
         });
 
-        if (signsSet.size() > 0) {
-            //如果为多个打卡机，需要与之前存储在文件中的签到信息做对比并返回。
-            String fileNamePrefix = new StringBuilder().append(FILENAME_PREFIX).append(DEVICE_ADDRESS)
-                    .append(UNDER_LINE + loadTime).toString();
-            String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix)
-                    .append(TEXT_FILE_SUFFIX).toString();
-            // 过滤数据返回有效数据
-            ArrayListMultimap<String, String> almp = InfoParser.ParserData(signsSet, textPathName);
+        if (signsList.size() > 0) {
 
-            log.debug("整合后的日期为：" + almp.toString());
+            //如果为多个打卡机，需要与之前存储在文件中的签到信息做对比并返回。
+            /*** String fileNamePrefix = new StringBuilder().append(FILENAME_PREFIX).append(DEVICE_ADDRESS)
+             .append(UNDER_LINE + loadTime).toString();
+             String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix)
+             .append(TEXT_FILE_SUFFIX).toString();
+             *  暂时去除，不在对功获取的数据进行筛选
+             // 过滤数据返回有效数据
+             ArrayListMultimap<String, String> almp = InfoParser.ParserData(signsList, textPathName);
+             log.debug("整合后的日期为：" + almp.toString());
+             */
             //获取打卡信息
-            getSingsInfo(almp, loadTime);
+            getSingsInfo(signsList, loadTime);
         }
     }
 
     /**
      * 获取打卡信息
      */
-    public static void getSingsInfo(ArrayListMultimap<String, String> info, String loadDate) {
+    public static void getSingsInfo(List<String> info, String loadDate) {
 
         //组合文件路径
         String fileNamePrefix = new StringBuilder().append(FILENAME_PREFIX).
@@ -149,32 +192,31 @@ public class InfoExection {
         String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(TEXT_FILE_SUFFIX).toString();
         String verfPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(VERF_FILE_SUFFIX).toString();
 
-        info.asMap().forEach((k, v) -> {
+        //生成打卡文件
+        info.forEach(x -> {
+            if (!x.isEmpty()) {
+                String[] split = x.split("#");
+                String[] time = split[1].split("\\s");
 
-            v.forEach(z -> {
-                try {
-                    Date punchDate = TimeUtils.timeStrToDate(loadDate, "yyyyMMdd");
-                    Timestamp punchTimeStamp = new Timestamp(TimeUtils.timeStrToDate(z, "yyyy-MM-dd HH:mm").getTime());
-
-                    String writeLine = k + '\t' + punchDate + '\t' + punchTimeStamp + '\n';
-                    // 生成记录写入文件
-                    FileUtils.writeFile(textPathName, writeLine, true);
-
-                } catch (ParseException e) {
-                    log.error("日期格式转换异常" + e.getMessage());
-                }
-            });
-
+                String writeLine = split[0] + SPACE + time[0] + SPACE + time[1] + END_LINE;
+                FileUtils.writeFile(textPathName, writeLine, true);
+            }
         });
 
         //生成校验文件
         FileInfo fileInfo = FileUtils.getFileInfo(textPathName);
         log.debug("文件 长度" + fileInfo.getRecordCounts() + "---" + fileInfo.getFileLength());
-        if (fileInfo.getFileLength() > 0 && fileInfo.getRecordCounts() > 0) { //文件为空
+        if (fileInfo.getFileLength() > 0 && fileInfo.getRecordCounts() > 0) { //文件不为空
             //写校验文件
-            String writeVerfStr = fileNamePrefix + TEXT_FILE_SUFFIX + '\t' + fileInfo.getFileLength() + '\t' +
-                    String.valueOf(fileInfo.getRecordCounts() - 1) + '\t' + loadDate + '\n';
+            String writeVerfStr = fileNamePrefix + TEXT_FILE_SUFFIX + VERF_SPACE + fileInfo.getFileLength() + VERF_SPACE +
+                    String.valueOf(fileInfo.getRecordCounts() - 1) + VERF_SPACE + loadDate + END_LINE;
             FileUtils.writeFile(verfPathName, writeVerfStr, false);
         }
+        //备份数据
+        log.info("程序开始备份考勤数据");
+        // xcopy d:\\access\\target\\DKJ_DKJL_XA_20191202.txt  \\192.168.0.168\data-kq /y;
+        String kqCommandTxt = "xcopy " + "E:\\data-kq" + " " + BACKUPS_ADDRESS + " /y";
+        log.info("开始备份数据-》指令为:" + kqCommandTxt);
+        log.info(ShareData.execCMD(kqCommandTxt));
     }
 }

@@ -94,7 +94,6 @@ public class FileUtils {
 
     public static FileInfo getFileInfo(String filePath) {
         File file = new File(filePath);
-        FileInfo f = new FileInfo();
         FileReader fileReader = null;
         LineNumberReader lineNumberReader = null;
 
@@ -128,6 +127,5 @@ public class FileUtils {
         }
 
         return new FileInfo(0, 0);
-
     }
 }

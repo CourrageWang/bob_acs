@@ -2,12 +2,20 @@ package com.irain.handle;
 
 import com.irain.conf.LoadConf;
 import com.irain.net.impl.SerialSocketClient;
+import com.irain.os.ShareData;
+import com.irain.utils.CommonUtils;
 import com.irain.utils.DEVInfoUtils;
 import com.irain.utils.PropertyUtils;
 import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.Map;
 
 /**
@@ -24,11 +32,13 @@ public class DeviceInfo {
     public static final int REGION_SIZE = 255;
     public static final int JUMP_INDEX = 240;
 
-    //获取上次存储的区块后，后移25区块后结束
-    public static final int MOVE_INDEX = 25;
+    //获取上次存储的区块后，后移50区块后结束
+    public static final int MOVE_INDEX = 50;
 
     //控制器端口号
     private static final int PORT = Integer.valueOf(LoadConf.propertiesMap.get("PORT").trim());
+
+    public static final String BACKUPS_ADDRESS = LoadConf.propertiesMap.get("BACKUPS_ADDRESS_DK");
 
     /**
      * 获取所有设备的打卡数据
@@ -42,83 +52,114 @@ public class DeviceInfo {
             String ip = k;
             String infoFromDevice = "";
             int port = PORT;
+
+            Socket socket = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(ip, port);
+            log.info(String.format("成功连接设备%s:%s", ip, port));
+            OutputStream os = null;
+            InputStream is = null;
+            try {
+                socket.connect(socketAddress, 6000);
+                socket.setSoTimeout(10000);//读数据超时时间
+                //2.得到socket读写流
+                os = socket.getOutputStream();
+                is = socket.getInputStream();
+            } catch (IOException e) {
+                //连接异常或者读超时异常。
+                log.error(String.format("连接设备%s:%s出现异常", ip, port) + e.getMessage());
+            }
             String recordPath = LoadConf.propertiesMap.get("READ_RECORD"); // 存储块区域的配置文件
             PropertyUtils readRecord = new PropertyUtils(recordPath);
 
             //从配置文件读取属性 不存在则从头开始读
-            if (readRecord.getKeyValue(ip) == null) {
-                loop:
-                for (int block = 0; block <= BLOCK_SIZE; block++) {
-                    for (int region = 0; region <= REGION_SIZE; region++) {
-                        //跳过0区域240块的无效数据
-                        if (block == 0 && region > JUMP_INDEX) {
-                            break;
-                        }
-                        boolean isTrue = true;
-                        while (isTrue) {
-                            infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block, region);
+//            if (readRecord.getKeyValue(ip) == null) {
+            loop:
+            for (int block = 0; block <= BLOCK_SIZE; block++) {
+                for (int region = 0; region <= REGION_SIZE; region++) {
+                    //跳过0区域240块的无效数据
+                    if (block == 0 && region > JUMP_INDEX) {
+                        break;
+                    }
+                    boolean isTrue = true;
+                    while (isTrue) {
+                        int location = Integer.valueOf(ip.split("\\.")[3]);
+                        infoFromDevice = SerialSocketClient.getInfoFromDevice(block, region, location, os, is);
+                        if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
+                            String start = infoFromDevice.substring(0, 2);
+                            if ("e2".equals(start)) {
+                                isTrue = false;
+                                log.info(String.format("从设备 %s:%s块%s区%s", ip, port, block, region) + "数据合法为：" + infoFromDevice +
+                                        "length " + infoFromDevice.length());
 
-                            if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
-                                String start = infoFromDevice.substring(0, 2);
-                                if ("e2".equals(start)) {
-                                    isTrue = false;
-                                    log.info(String.format("从设备 %s:%s块%s区%s", ip, port, block, region) + "数据合法为：" + infoFromDevice +
-                                            "length " + infoFromDevice.length());
+                                //判断是否存在整页数据为空的现象
+                                String x = infoFromDevice;
+                                if (x.substring(2, x.length() - 2).startsWith("ff")) {
+                                    break loop;
+                                }
+                                String strWithoutIdentifier = x.replaceAll("e2", "").replaceAll("e3", "");
+                                int strLen = strWithoutIdentifier.length();
+                                //判断数据长度是否符要求，不满足将在末尾追加数据
+                                if (strLen != CORRECT_LENGTH) {
+                                    strWithoutIdentifier = new DEVInfoUtils().appendZeroToEnd(strWithoutIdentifier);
+                                }
+                                for (int i = 0; i < strLen; i = i + 16) {
+                                    String substring = strWithoutIdentifier.substring(i, i + 16);
+                                    if (substring.startsWith("bb55") || substring.startsWith("b5b5")) {
+                                        continue;
+                                    }
 
-                                    //判断是否存在整页数据为空的现象
-                                    String x = infoFromDevice;
-                                    if (x.substring(2, x.length() - 2).startsWith("ff")) {
+                                    if (substring.startsWith("ff")) {
                                         break loop;
                                     }
-                                    String strWithoutIdentifier = x.replaceAll("e2", "").replaceAll("e3", "");
-                                    int strLen = strWithoutIdentifier.length();
-                                    //判断数据长度是否符要求，不满足将在末尾追加数据
-                                    if (strLen != CORRECT_LENGTH) {
-                                        strWithoutIdentifier = new DEVInfoUtils().appendZeroToEnd(strWithoutIdentifier);
-                                    }
-                                    for (int i = 0; i < strLen; i = i + 16) {
-                                        String substring = strWithoutIdentifier.substring(i, i + 16);
-                                        if (substring.startsWith("bb55") || substring.startsWith("b5b5")) {
-                                            continue;
-                                        }
+                                    //获取时间
+                                    String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +
+                                            substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14);
 
-                                        if (substring.startsWith("ff")) {
-                                            break loop;
-                                        }
-                                        //获取时间
-                                        String signTime = "20" + substring.substring(4, 6) + "-" + substring.substring(6, 8) + "-" +
-                                                substring.substring(8, 10) + " " + substring.substring(10, 12) + ":" + substring.substring(12, 14);
-
-                                        String signDay = "20" + substring.substring(4, 10);
-                                        String cardNo = substring.substring(0, 4);//卡号
-                                        log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
-                                        //时间合法则进行操作
-                                        if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
-                                            if (TimeUtils.compareDate(yesterDatStr, signDay, YYYYMMDD) == 0) {
-                                                //更新记录块文件
-                                                readRecord.updateProperties(k, block + "@" + region, recordPath);
-                                                //创建excel文档按照季度设备名称创建
-                                                try {
-                                                    new DEVInfoUtils().saVeDataToExcelBySeason(ip, cardNo, signTime);
-                                                } catch (UnsupportedEncodingException e) {
-                                                    log.error("写入数据到excel文件失败" + e.getMessage());
-                                                }
-                                            } else {
-                                                // 数据不符合要求， 跳过本次循环
-                                                continue;
+                                    String signDay = "20" + substring.substring(4, 10);
+                                    String cardNo = substring.substring(0, 4);//卡号
+                                    //     log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
+                                    //时间合法则进行操作
+                                    if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
+                                        if (TimeUtils.compareDate(yesterDatStr, signDay, YYYYMMDD) == 0) {
+                                            //更新记录块文件
+                                            //  readRecord.updateProperties(k, block + "@" + region, recordPath);
+                                            //创建excel文档按照季度设备名称创建
+                                            try {
+                                                new DEVInfoUtils().saVeDataToExcelBySeason(ip, cardNo, signTime);
+                                            } catch (UnsupportedEncodingException e) {
+                                                log.error("写入数据到excel文件失败" + e.getMessage());
                                             }
+                                        } else {
+                                            // 数据不符合要求， 跳过本次循环
+                                            continue;
                                         }
                                     }
                                 }
-                                // 如果设备连接异常返回null 继续检测下一个数据
-                            } else if (infoFromDevice.equals("null")) {
-                                log.error(String.format("设备%s:%s连接异常", ip, port + ""));
-                                break loop;
                             }
+                            // 如果设备连接异常返回null 继续检测下一个数据
+                        } else if (infoFromDevice.equals("null")) {
+                            log.error(String.format("设备%s:%s连接异常", ip, port + ""));
+                            break loop;
                         }
                     }
                 }
-            } else { // 配置文件中有属性
+            }
+
+            // 备份数据
+            String kqCommandTxt = "xcopy " + "E:\\data-dk" + " " + BACKUPS_ADDRESS + " /y";
+            log.info("开始备份数据-》指令为:" + kqCommandTxt);
+            log.info(ShareData.execCMD(kqCommandTxt));
+
+            //结束关闭连接
+            try {
+                log.info("关闭连接！！");
+                CommonUtils.closeStream(socket, is, os);
+            } catch (IOException e) {
+                log.error(String.format("关闭连接%s:%s出现异常", ip, port));
+            }
+//            }
+           /*
+            else { // 配置文件中有属性
                 // 获取属性值开始读文进
                 log.error("从区块文件中获取记录");
                 String recordValue = readRecord.getKeyValue(ip);
@@ -146,7 +187,8 @@ public class DeviceInfo {
                         }
                         boolean isTrue = true;
                         while (isTrue) {
-                            infoFromDevice = SerialSocketClient.getInfoFromDevice(ip, port, block2, region2);
+                            int location = Integer.valueOf(ip.split("\\.")[3]);
+                            infoFromDevice = SerialSocketClient.getInfoFromDevice(block2, region2, location, os, is);
                             if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
                                 String start = infoFromDevice.substring(0, 2);
 
@@ -187,6 +229,7 @@ public class DeviceInfo {
                                                 //创建excel文档按照季度设备名称创建
                                                 try {
                                                     new DEVInfoUtils().saVeDataToExcelBySeason(ip, cardNo, signTime);
+
                                                 } catch (UnsupportedEncodingException e) {
                                                     log.error("写入数据到excel文件失败" + e.getMessage());
                                                 }
@@ -205,7 +248,19 @@ public class DeviceInfo {
                         }
                     }
                 }
-            }
+                // 释放连接
+                try {
+                    log.info("关闭连接！！");
+                    CommonUtils.closeStream(socket, is, os);
+                } catch (IOException e) {
+                    log.error(String.format("关闭连接%s:%s出现异常", ip, port));
+                }
+
+                // 备份数据
+                String kqCommandTxt = "xcopy " + "E:\\data-dk" + " " + BACKUPS_ADDRESS + " /y";
+                log.info("开始备份数据-》指令为:" + kqCommandTxt);
+                log.info(ShareData.execCMD(kqCommandTxt));
+            }*/
         });
     }
 }

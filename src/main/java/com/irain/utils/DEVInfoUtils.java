@@ -1,6 +1,7 @@
 package com.irain.utils;
 
 import com.irain.conf.LoadConf;
+import lombok.extern.log4j.Log4j;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -11,11 +12,12 @@ import java.io.UnsupportedEncodingException;
  * @date: 2019/12/5 14:59
  * 设备信息工具类
  **/
+@Log4j
 public class DEVInfoUtils {
 
     public static final int CORRECT_LENGTH = 256; //一个区块对应16*16条数据。
 
-    String basePath = LoadConf.propertiesMap.get("FILE_PATH");//基本配置文件属性存放位置
+    String basePath = LoadConf.propertiesMap.get("BACKUPS_KQ");//基本配置文件属性存放位置
 
     /**
      * 如果数据长度不满足16*16则在末尾加0
@@ -46,10 +48,11 @@ public class DEVInfoUtils {
      */
     public void saVeDataToExcelBySeason(String ip, String cardNo, String signTime) throws UnsupportedEncodingException {
         String nowSeason = TimeUtils.getSeason(); //获取当前的季度
-        String ExcelName = "";
+        String excelName = "";
 
-        ExcelName = new String(LoadConf.devicesMap.get(ip).getBytes("ISO-8859-1"), "UTF-8");
-        String excelFilePath = basePath + ExcelName + nowSeason + ".xls";//一楼门口season.xls
+        excelName = new String(LoadConf.devicesMap.get(ip).getBytes("ISO-8859-1"), "UTF-8");
+        String excelFilePath = basePath + excelName + nowSeason + ".xls";//一楼门口season.xls
+        //log.debug(String.format("Excel文件名称为%s路径为:%s", excelName, excelFilePath));
         File file = new File(excelFilePath);
 
         if (!file.exists()) {
