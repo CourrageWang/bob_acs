@@ -21,7 +21,7 @@ public class ExcelUtils {
      * 创建指定位置的Excel文件并包含多个Sheets
      *
      * @param filePath
-     * @param listsOfSheets
+     * @param sheetName
      */
     public void createExcelWithSheets(String filePath, String sheetName) {
 
@@ -37,7 +37,9 @@ public class ExcelUtils {
                 Row row = sheet.createRow(0);
                 row.createCell(0).setCellValue("人员编号");
                 row.createCell(1).setCellValue("日期");
-                row.createCell(2).setCellValue("控制器号");
+                row.createCell(2).setCellValue("时间");
+                row.createCell(3).setCellValue("控制器号");
+                row.createCell(4).setCellValue("姓名");
 
                 out = new FileOutputStream(filePath);
                 workbook.write(out);

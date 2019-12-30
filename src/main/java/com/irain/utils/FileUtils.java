@@ -128,4 +128,18 @@ public class FileUtils {
 
         return new FileInfo(0, 0);
     }
+
+    /**
+     * 创建文件夹
+     *
+     * @param path
+     * @return
+     */
+    public static boolean createFolder(String path) {
+        File folderPath = new File(path);
+        if (!folderPath.exists()) {
+            return folderPath.mkdir();
+        }
+        return false;
+    }
 }

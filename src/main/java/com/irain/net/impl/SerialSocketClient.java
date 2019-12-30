@@ -36,7 +36,7 @@ public class SerialSocketClient {
             sendRecord = sendData(block, region, location, os);
             try {
                 Thread.sleep(500);
-                System.out.println("程序休眠一秒");
+                log.info("程序休眠一秒");
             } catch (InterruptedException e) {
                 log.error("休眠时发生异常！" + e.getMessage());
             }
@@ -105,7 +105,7 @@ public class SerialSocketClient {
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
-            //log.error(String.format("休眠出现异常", ip, port, e.getMessage()));
+            log.error(String.format("休眠出现异常", e.getMessage()));
         }
         return "null";
     }

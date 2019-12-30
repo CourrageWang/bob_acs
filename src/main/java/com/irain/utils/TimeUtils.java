@@ -186,4 +186,26 @@ public class TimeUtils {
         }
         return convertSuccess;
     }
+
+    /**
+     * 获取年份已经当前的季度数
+     *
+     * @return 2019-1 // 2019年一季度
+     */
+    public static String getYearWithSeason() {
+        Calendar now = Calendar.getInstance();
+        int month = now.get(Calendar.MONTH) + 1;
+        String year = String.valueOf(now.get(Calendar.YEAR));
+
+        if (month == 1 | month == 2 || month == 3) {
+            return year + "-" + "1";
+        } else if (month == 4 || month == 5 || month == 6) {
+            return year + "-" + "2";
+        } else if (month == 7 || month == 8 || month == 9) {
+            return year + "-" + "3";
+        } else if (month == 10 || month == 11 || month == 12) {
+            return year + "-" + "4";
+        }
+        return "";
+    }
 }
