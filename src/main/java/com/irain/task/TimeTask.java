@@ -102,7 +102,7 @@ public class TimeTask {
                     }
                 },
                 initDelay,  //初始化延迟
-                oneDay, //两次开始的执行的最小时间间隔
+                oneDay, //两次开始的执行的最小时间间隔*/
                 TimeUnit.MILLISECONDS //计时单位
         );
     }
@@ -120,7 +120,7 @@ public class TimeTask {
                     try {
                         log.info("~~~~~~定时任务开始导入打卡数据~~~~~~");
                         new DeviceInfo().loadAllDeviceData(LoadConf.devicesMap, TimeUtils.getYesterDayStr().trim());
-                        log.info("~~~~~~定时任务开始导入打卡数据~~~~~~");
+                        log.info("~~~~~~定时任务结束导入打卡数据~~~~~~");
                     } catch (Exception e) {
                         log.error("定时任务执行过程中发生异常" + e.getMessage());
                     }

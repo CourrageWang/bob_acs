@@ -1,7 +1,10 @@
 package com.irain;
 
 import com.irain.conf.LoadConf;
+import com.irain.handle.DeviceInfo;
+import com.irain.handle.InfoExection;
 import com.irain.task.TimeTask;
+import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
 /**
@@ -24,6 +27,5 @@ public class Main {
 
         //每天凌晨四点开始将所有打卡机上的数据同步，并通过增量的方式存储在指定的excel文件夹下；
         new TimeTask().dayOfLoadAllDeviceData("03:00:00");
-
     }
 }

@@ -48,7 +48,7 @@ public class InfoExection {
     //备份主机的路径
     public static final String BACKUPS_ADDRESS = LoadConf.propertiesMap.get("BACKUPS_ADDRESS");
 
-    private static List<String> signsList = new ArrayList<>();
+    private static List<String> signsList = new ArrayList<>(); //全局静态资源使用需谨慎
 
     /**
      * 考勤数据因读的控制器较少，为了保证数据的可靠性，采用全读的方式。
@@ -137,6 +137,7 @@ public class InfoExection {
                                 //时间合法则进行操作
                                 if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
                                     if (TimeUtils.compareDate(loadTime, signDay, YYYYMMDD) == 0) {
+                                        System.err.println("当前时间为：" + loadTime + "siginDay:" + signDay);
                                         String userAccount = PropertyUtils.readValue(ACCOUNT_REL, cardNo);
                                         if (userAccount != null) {
                                             if (userAccount.length() > 0) {
@@ -218,5 +219,10 @@ public class InfoExection {
         String kqCommandTxt = "xcopy " + "E:\\data-kq" + " " + BACKUPS_ADDRESS + " /y";
         log.info("开始备份数据-》指令为:" + kqCommandTxt);
         log.info(ShareData.execCMD(kqCommandTxt));
+
+        //释放资源【由于定时任务结束后不会自动释放List中数据，程序需要手动释放】list 本身为静态资源全局生成不会释放
+        log.debug("释放资源" + "释放前长度为：" + info.size());
+        info.removeAll(info);
+        log.debug("释放资源" + "释放前后度为：" + info.size());
     }
 }

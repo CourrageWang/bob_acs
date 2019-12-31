@@ -51,8 +51,13 @@ public class DEVInfoUtils {
      */
     public void saVeDataToExcelBySeason(String ip, String cardNo, String signTime, String filePath) throws UnsupportedEncodingException {
         String userRecord = PropertyUtils.readValue(ACCOUNT_REL, cardNo);
-        String userName = new String(userRecord.split("@")[1].getBytes("ISO-8859-1"), "UTF-8");
-
+        String userName = "";
+        if (userRecord == null) {
+            userName = "";
+        } else {
+            log.debug("cardNo:" + cardNo + "userRecord" + userRecord);
+            userName = new String(userRecord.split("@")[1].getBytes("ISO-8859-1"), "UTF-8");
+        }
         //人员编号-日期-时间-控制器编号-姓名
         String writeLine = cardNo + "#" + signTime.substring(0, 10) + "#" + signTime.substring(11, 16) +
                 "#" + ip.split("\\.")[3] + "#" + userName;
@@ -66,13 +71,13 @@ public class DEVInfoUtils {
      * @param ip
      */
     public void createFolderWithExcels(String folderPath, String excelFilePath, String ip) {
-        log.debug("存储打卡数据的文件夹为" + folderPath);
+        // log.debug("存储打卡数据的文件夹为" + folderPath);
         FileUtils.createFolder(folderPath);
         File file = new File(excelFilePath);
 
         if (!file.exists()) {
             new ExcelUtils().createExcelWithSheets(excelFilePath, ip);
         }
-        log.debug("创建完成");
+//        log.debug("创建完成");
     }
 }

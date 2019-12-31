@@ -27,9 +27,6 @@ public class DeviceInfo {
     public static final int REGION_SIZE = 255;
     public static final int JUMP_INDEX = 240;
 
-    //获取上次存储的区块后，后移50区块后结束
-    public static final int MOVE_INDEX = 50;
-
     //控制器端口号
     private static final int PORT = Integer.valueOf(LoadConf.propertiesMap.get("PORT").trim());
 
@@ -66,7 +63,6 @@ public class DeviceInfo {
                 log.error(String.format("连接设备%s:%s出现异常", ip, port) + e.getMessage());
             }
             String recordPath = LoadConf.propertiesMap.get("READ_RECORD"); // 存储块区域的配置文件
-            PropertyUtils readRecord = new PropertyUtils(recordPath);
 
             //从配置文件读取属性 不存在则从头开始读
             loop:
@@ -79,8 +75,7 @@ public class DeviceInfo {
                     boolean isTrue = true;
                     while (isTrue) {
                         int location = Integer.valueOf(ip.split("\\.")[3]);
-                        //todo tmp
-                        infoFromDevice = SerialSocketClient.getInfoFromDevice(block, region, 1, os, is);
+                        infoFromDevice = SerialSocketClient.getInfoFromDevice(block, region, location, os, is);
                         if (infoFromDevice != "null") { //数据不为空并且数据中不能含有字母
                             String start = infoFromDevice.substring(0, 2);
                             if ("e2".equals(start)) {
@@ -93,15 +88,15 @@ public class DeviceInfo {
                                  */
 
                                 String dkPath = DK_ADDRESS + TimeUtils.getYearWithSeason();
-                                log.debug("存储打卡数据的路径为" + dkPath);
+                                //log.debug("存储打卡数据的路径为" + dkPath);
                                 String excelName = "";
                                 try {
                                     excelName = new String(LoadConf.devicesMap.get(ip).getBytes("ISO-8859-1"), "UTF-8");
                                 } catch (UnsupportedEncodingException e) {
                                     e.printStackTrace();
                                 }
-                                String excelFilePath = dkPath + "\\" + excelName + ip.split("\\.")[3] + ".xls";//一楼门口_1.xls
-                                log.debug(String.format("Excel文件名称为%s路径为:%s", excelName, excelFilePath));
+                                String excelFilePath = dkPath + "\\" + ip.split("\\.")[3] + "_" + excelName + ".xls";//一楼门口_1.xls
+                                // log.debug(String.format("Excel文件名称为%s路径为:%s", excelName, excelFilePath));
                                 new DEVInfoUtils().createFolderWithExcels(dkPath, excelFilePath, ip);
 
                                 //判断是否存在整页数据为空的现象
@@ -131,7 +126,7 @@ public class DeviceInfo {
 
                                     String signDay = "20" + substring.substring(4, 10);
                                     String cardNo = substring.substring(0, 4);//卡号
-                                     log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
+//                                    log.debug("卡号：" + cardNo + "打卡时间:" + signTime + "打卡日期：" + signDay);
                                     //时间合法则进行操作
                                     if (TimeUtils.isValidDate(signDay, YYYYMMDD)) {
                                         if (TimeUtils.compareDate(yesterDatStr, signDay, YYYYMMDD) == 0) {
@@ -159,7 +154,8 @@ public class DeviceInfo {
             }
 
             // 备份数据
-            String kqCommandTxt = "xcopy " + "E:\\data-dk" + " " + BACKUPS_ADDRESS + " /y";
+            String dkPath = "E:\\data-dk\\" + TimeUtils.getYearWithSeason() + " ";
+            String kqCommandTxt = "xcopy " + dkPath + BACKUPS_ADDRESS + "\\" + TimeUtils.getYearWithSeason() + "\\ " + " /y";
             log.info("开始备份数据-》指令为:" + kqCommandTxt);
             log.info(ShareData.execCMD(kqCommandTxt));
 
