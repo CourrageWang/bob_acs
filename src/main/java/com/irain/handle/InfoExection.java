@@ -47,6 +47,8 @@ public class InfoExection {
     public static final String FILEPATH = LoadConf.propertiesMap.get("FILE_PATH");
     //备份主机的路径
     public static final String BACKUPS_ADDRESS = LoadConf.propertiesMap.get("BACKUPS_ADDRESS");
+    // 非本行员工标志位
+    public static final String ILLEGAL_USER = "000000";
 
     private static List<String> signsList = new ArrayList<>(); //全局静态资源使用需谨慎
 
@@ -141,8 +143,10 @@ public class InfoExection {
                                         String userAccount = PropertyUtils.readValue(ACCOUNT_REL, cardNo);
                                         if (userAccount != null) {
                                             if (userAccount.length() > 0) {
-                                                String sub = userAccount.split("@")[0] + "#" + signTime;
-                                                signsList.add(sub);
+                                                if (!ILLEGAL_USER.equals(userAccount.split("@")[0])) {
+                                                    String sub = userAccount.split("@")[0] + "#" + signTime;
+                                                    signsList.add(sub);
+                                                }
                                             }
                                         }
                                     } else {
