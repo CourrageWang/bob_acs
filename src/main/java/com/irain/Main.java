@@ -1,10 +1,7 @@
 package com.irain;
 
 import com.irain.conf.LoadConf;
-import com.irain.handle.DeviceInfo;
-import com.irain.handle.InfoExection;
 import com.irain.task.TimeTask;
-import com.irain.utils.TimeUtils;
 import lombok.extern.log4j.Log4j;
 
 /**
@@ -16,6 +13,7 @@ import lombok.extern.log4j.Log4j;
 public class Main {
 
     public static void main(String[] args) {
+
         log.info("---------------程序开始执行-----------------");
         //加载配置文件
         new LoadConf();
