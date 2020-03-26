@@ -1,11 +1,9 @@
 package com.irain.conf;
 
-import com.irain.swing.ErrorDialog;
 import com.irain.utils.FileUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j;
 
-import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,7 +20,6 @@ public class LoadConf {
     public static Map<String, String> devicesMap = new HashMap<>();// 存储所有设备信息；
     public static Map<String, String> importDevicesMap = new HashMap<>();// 存错所有设备信息；
     private static final String PROPERTY_PATH = "D:\\access\\conf\\application.properties";
-    public static Frame jFrame = ErrorDialog.frame;
 
     static {
         try {

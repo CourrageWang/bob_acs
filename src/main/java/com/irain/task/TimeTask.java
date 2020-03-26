@@ -4,7 +4,7 @@ import com.irain.conf.LoadConf;
 import com.irain.handle.ConnectionStatus;
 import com.irain.handle.DeviceInfo;
 import com.irain.handle.InfoExection;
-import com.irain.swing.ErrorDialog;
+import com.irain.swing.NoticeDialog;
 import com.irain.utils.CheckConnectionUtils;
 import com.irain.utils.CommonUtils;
 import com.irain.utils.Player;
@@ -43,35 +43,28 @@ public class TimeTask {
                     try {
                         log.info("******检测设备连接状态定时任务程序开始执行******");
                         LoadConf.devicesMap.forEach((k, v) -> {
+
                             String ip = k;
                             String port = PORT;
                             log.info(String.format(" 开始检测设备数据%s:%s", ip, port));
-                            Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.valueOf(port));
+                            Set<String> set = ConnectionStatus.checkDeviceStatus(ip, Integer.parseInt(port));
+
                             //设备连接异常 并写入文件按日生成
                             if (set.contains("lost")) {
-                                new Player().playMP3Music(VOICE_LOST_CONN);
+                                Player.playMP3Music(VOICE_LOST_CONN);
 
-                                //弹出对话框
-                                if (LoadConf.jFrame == null) {
-                                    ErrorDialog.getInstance().label.setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
+                                if (!NoticeDialog.show) {
+                                    NoticeDialog.getInstance().setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip)))).setVisible(true);
+                                    new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备连接异常");
+                                } else {
+                                    NoticeDialog.getInstance().setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
+                                    new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备连接异常");
                                 }
-                                ErrorDialog.label.setText(String.format("%s:%s连接异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
-                                //按天生成文件
-                                new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备连接异常");
-                            }
-                            //设备故障并写入文件按日生成
-                            if (set.size() == 0) {
-                                new Player().playMP3Music(VOICE_DEVICE_ERROR);
-                                //弹出对话框
-                                if (LoadConf.jFrame == null) {
-                                    ErrorDialog.getInstance().label.setText(String.format("%s:%s设备硬件异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
-                                }
-                                ErrorDialog.label.setText(String.format("%s:%s设备硬件异常", TimeUtils.getNowTimeStr(), CommonUtils.getCN(devicesMap.get(ip))));
-                                new CheckConnectionUtils().saveLogtoFileByDay(FOLDER, TimeUtils.getNowTimeStr(), ip, "设备硬件异常");
                             }
                         });
                         log.info("******检测设备连接状态定时任务结束******");
                     } catch (Exception e) {
+                        e.printStackTrace();
                         log.error("检查设备状态时出现异常" + e.getMessage());
                     }
                 },
