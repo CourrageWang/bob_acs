@@ -27,9 +27,8 @@ public class TimeTask {
 
     private static ScheduledExecutorService excutor = Executors.newSingleThreadScheduledExecutor();
 
-    private static final String VOICE_DEVICE_ERROR = LoadConf.propertiesMap.get("HAPPENED_ERROR_VOCIE");
     private static final String VOICE_LOST_CONN = LoadConf.propertiesMap.get("LOST_CONNECTION_VOICE");
-    private static final String FOLDER = LoadConf.propertiesMap.get("FILE_PATH");
+    private static final String FOLDER = LoadConf.propertiesMap.get("DEVICE_ERROR");
     private static final String PORT = LoadConf.propertiesMap.get("PORT");
     private static final Map<String, String> devicesMap = LoadConf.devicesMap;
 
