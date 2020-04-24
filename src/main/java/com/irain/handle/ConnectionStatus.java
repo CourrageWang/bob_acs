@@ -101,8 +101,8 @@ public class ConnectionStatus {
                             String correctTimeIns = new Instruction().correctTimeInstruction(1, currentOSTime);
                             log.debug("校时操作发送指令为" + correctTimeIns);
 
-                            // CommonUtils.closeStream(socket, br, is, os);
-                            // 发送校时操作
+//                            CommonUtils.closeStream(socket, is, os);
+//                            // 发送校时操作
 //                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
 //                            if (b) {
 //                                log.debug("校时操作成功");

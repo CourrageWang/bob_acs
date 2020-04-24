@@ -7,6 +7,7 @@ import com.irain.os.ShareData;
 import com.irain.utils.*;
 import lombok.extern.log4j.Log4j;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -47,6 +48,8 @@ public class InfoExection {
     public static final String FILEPATH = LoadConf.propertiesMap.get("FILE_PATH");
     //备份主机的路径
     public static final String BACKUPS_ADDRESS = LoadConf.propertiesMap.get("BACKUPS_ADDRESS");
+    //备份考勤数据的本机地址
+    public static final String DATA_KQ_BACKUPS = LoadConf.propertiesMap.get("FILE_BACKUPS_PATH");
     // 非本行员工标志位
     public static final String ILLEGAL_USER = "000000";
 
@@ -197,6 +200,10 @@ public class InfoExection {
         String textPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(TEXT_FILE_SUFFIX).toString();
         String verfPathName = new StringBuilder().append(FILEPATH).append(fileNamePrefix).append(VERF_FILE_SUFFIX).toString();
 
+
+        String textBackUpsPathName = new StringBuilder().append(DATA_KQ_BACKUPS).append(fileNamePrefix).append(TEXT_FILE_SUFFIX).toString();
+        String verfBackUpsPathName = new StringBuilder().append(DATA_KQ_BACKUPS).append(fileNamePrefix).append(VERF_FILE_SUFFIX).toString();
+
         //生成打卡文件
         info.forEach(x -> {
             if (!x.isEmpty()) {
@@ -205,6 +212,8 @@ public class InfoExection {
 
                 String writeLine = split[0] + SPACE + time[0] + SPACE + time[1] + END_LINE;
                 FileUtils.writeFile(textPathName, writeLine, true);
+                // 再次备份打卡数据
+                FileUtils.writeFile(textBackUpsPathName, writeLine, true);
             }
         });
 
@@ -216,6 +225,8 @@ public class InfoExection {
             String writeVerfStr = fileNamePrefix + TEXT_FILE_SUFFIX + VERF_SPACE + fileInfo.getFileLength() + VERF_SPACE +
                     String.valueOf(fileInfo.getRecordCounts() - 1) + VERF_SPACE + loadDate + END_LINE;
             FileUtils.writeFile(verfPathName, writeVerfStr, false);
+            // 再次备份校验文件数据
+            FileUtils.writeFile(verfBackUpsPathName, writeVerfStr, true);
         }
         //备份数据
         log.info("程序开始备份考勤数据");
