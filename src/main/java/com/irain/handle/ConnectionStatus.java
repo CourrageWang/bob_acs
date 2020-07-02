@@ -100,14 +100,14 @@ public class ConnectionStatus {
                             log.info("程序相差超过10秒，将触发校时操作");
                             String correctTimeIns = new Instruction().correctTimeInstruction(1, currentOSTime);
                             log.debug("校时操作发送指令为" + correctTimeIns);
-
-//                            CommonUtils.closeStream(socket, is, os);
-//                            // 发送校时操作
-//                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
-//                            if (b) {
-//                                log.debug("校时操作成功");
-//                            }
-//                            log.debug("完成校时操作");
+                            CommonUtils.closeStream(socket, is, os);
+                            // 暂时关闭校时操作。
+                            /*// 发送校时操作
+                            boolean b = CommonUtils.sendCommand(ip, port, correctTimeIns);
+                            if (b) {
+                                log.debug("校时操作成功");
+                            }*/
+                            log.debug("完成校时操作");
                         }
                     }
                 }

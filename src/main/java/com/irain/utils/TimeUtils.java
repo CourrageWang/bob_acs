@@ -197,13 +197,31 @@ public class TimeUtils {
         int month = now.get(Calendar.MONTH) + 1;
         String year = String.valueOf(now.get(Calendar.YEAR));
 
+        // 新一年的第一天仍然导出的上一年的最后一天的数据
+        // 也就是2020年1月1日实际上是2020年的第一季度，但是由于这一天导出的数据是2019年12月31号
+        // 的数据仍然要按照2019-4 文件夹下 因此需要特殊处理
+
         if (month == 1 | month == 2 || month == 3) {
+            if (month == 1 && now.get(Calendar.DATE) == 1) {
+                Integer ye = Integer.parseInt(year) - 1;
+                return ye + "-" + "4";
+            }
             return year + "-" + "1";
         } else if (month == 4 || month == 5 || month == 6) {
+            if (month == 4 && now.get(Calendar.DATE) == 1) {
+                return year + "-" + "1";
+            }
             return year + "-" + "2";
         } else if (month == 7 || month == 8 || month == 9) {
+            if (month == 7 && now.get(Calendar.DATE) == 1) {
+                return year + "-" + "2";
+            }
             return year + "-" + "3";
         } else if (month == 10 || month == 11 || month == 12) {
+
+            if (month == 10 && now.get(Calendar.DATE) == 1) {
+                return year + "-" + "3";
+            }
             return year + "-" + "4";
         }
         return "";
