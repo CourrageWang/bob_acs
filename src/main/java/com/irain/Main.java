@@ -28,9 +28,9 @@ public class Main {
                 log.info("---------------程序开始执行-----------------");
                 //加载配置文件
                 new LoadConf();
-                log.info("******获取考勤数据定时任务开始执行******");
-                //开始处理输入数据
-                InfoExection.execute(LoadConf.importDevicesMap, TimeUtils.getYesterDayStr().trim());
+                //开始处理输入数据 日期为需要导入数据的日期
+                // 如导入20200701的数据 则输入日需要重新导入的日期。
+                InfoExection.execute(LoadConf.importDevicesMap, loadData);
                 log.info("******获取考勤数据定时任务执行结束*******");
             }
         } else {

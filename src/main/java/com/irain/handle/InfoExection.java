@@ -63,7 +63,7 @@ public class InfoExection {
      * @return
      */
     public static void execute(Map<String, String> confMap, String loadTime) {
-
+        log.info(String.format("<=========程序开始备份%s========>", loadTime));
         confMap.forEach((k, v) -> {
             //step1 读取门禁设备的Ip和port
             String ip = k;
