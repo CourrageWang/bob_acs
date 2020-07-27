@@ -4,6 +4,10 @@ import com.irain.conf.LoadConf;
 import com.irain.task.TimeTask;
 import lombok.extern.log4j.Log4j;
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
 /**
  * @Author: w
  * @Date: 2019/11/14 3:48 下午
@@ -13,6 +17,40 @@ import lombok.extern.log4j.Log4j;
 public class Main {
 
     public static void main(String[] args) {
+
+        /***
+         *   思路:
+         *    程序运行时 启动一个端口，并占用端口，每间隔一个小时 会重新启动程序，
+         *    如果程序正常运行的话，那么 程序会抛出端口已占用的异常，如果程序结束的话
+         *    则可正常启动。
+         *    利用异常保证只有一个进程在运行。
+         */
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                ServerSocket serverSocket = null;
+                Socket socket = null;
+                try {
+                    serverSocket = new ServerSocket(8888);
+                    System.out.println("程序运行中。。。。。。");
+                    socket = serverSocket.accept();//侦听并接受到此套接字的连接,返回一个Socket对象
+                    System.out.println("程序运行中。。。。。。");
+                } catch (IOException e) {
+                    System.out.println("程序已经启动。。。。。");
+                    System.exit(0);
+                } finally {
+                    try {
+                        // 释放资源
+                        serverSocket.close();
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+            }
+        }).start();
+
 
         log.info("---------------程序开始执行-----------------");
         //加载配置文件
