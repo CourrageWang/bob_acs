@@ -32,11 +32,11 @@ public class Main {
                 Socket socket = null;
                 try {
                     serverSocket = new ServerSocket(8888);
-                    System.out.println("程序运行中。。。。。。");
+                    log.info("程序运行中。。。。。。");
                     socket = serverSocket.accept();//侦听并接受到此套接字的连接,返回一个Socket对象
-                    System.out.println("程序运行中。。。。。。");
+                    log.info("程序运行中。。。。。。");
                 } catch (IOException e) {
-                    System.out.println("程序已经启动。。。。。");
+                  log.warn("程序已经启动。。。。。");
                     System.exit(0);
                 } finally {
                     try {
