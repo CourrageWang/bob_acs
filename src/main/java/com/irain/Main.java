@@ -36,7 +36,7 @@ public class Main {
                     socket = serverSocket.accept();//侦听并接受到此套接字的连接,返回一个Socket对象
                     log.info("程序运行中。。。。。。");
                 } catch (IOException e) {
-                  log.warn("程序已经启动。。。。。");
+                    log.warn("程序已经启动。。。。。");
                     System.exit(0);
                 } finally {
                     try {

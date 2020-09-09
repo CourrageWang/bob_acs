@@ -63,7 +63,6 @@ public class TimeTask {
                         });
                         log.info("******检测设备连接状态定时任务结束******");
                     } catch (Exception e) {
-                        e.printStackTrace();
                         log.error("检查设备状态时出现异常" + e.getMessage());
                     }
                 },
