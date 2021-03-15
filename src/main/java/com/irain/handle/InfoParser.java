@@ -1,6 +1,5 @@
 package com.irain.handle;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.irain.conf.LoadConf;
 import com.irain.utils.FileUtils;
 import lombok.extern.log4j.Log4j;
@@ -30,7 +29,7 @@ public class InfoParser {
      * @param filePath 保存签到信息的文件路径
      * @return
      */
-    public static ArrayListMultimap<String, String> ParserData_Bak(List<String> set, String filePath) {
+   /* public static ArrayListMultimap<String, String> ParserData_Bak(List<String> set, String filePath) {
         ArrayListMultimap<String, String> multimap = ArrayListMultimap.create(100, 1000);
         //从指定文件获取打开记录，如果文件存在则必有打卡记录
 
@@ -67,7 +66,7 @@ public class InfoParser {
             multimap2.put(key, collect.get(0));
         }
         return multimap2;
-    }
+    }*/
 
 //    /**
 //     * @param signList

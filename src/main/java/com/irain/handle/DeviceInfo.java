@@ -2,7 +2,6 @@ package com.irain.handle;
 
 import com.irain.conf.LoadConf;
 import com.irain.net.impl.SerialSocketClient;
-import com.irain.os.ShareData;
 import com.irain.utils.*;
 import lombok.extern.log4j.Log4j;
 
@@ -152,11 +151,11 @@ public class DeviceInfo {
                 }
             }
 
-            // 备份数据
+           /* // 备份数据
             String dkPath = "E:\\data-dk\\" + TimeUtils.getYearWithSeason() + " ";
             String kqCommandTxt = "xcopy " + dkPath + BACKUPS_ADDRESS + "\\" + TimeUtils.getYearWithSeason() + "\\ " + " /y";
             log.info("开始备份数据-》指令为:" + kqCommandTxt);
-            log.info(ShareData.execCMD(kqCommandTxt));
+            log.info(ShareData.execCMD(kqCommandTxt));*/
 
             //结束关闭连接
             try {

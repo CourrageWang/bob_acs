@@ -228,12 +228,12 @@ public class InfoExection {
             // 再次备份校验文件数据
             FileUtils.writeFile(verfBackUpsPathName, writeVerfStr, true);
         }
-        //备份数据
+       /* //备份数据
         log.info("程序开始备份考勤数据");
         // xcopy d:\\access\\target\\DKJ_DKJL_XA_20191202.txt  \\192.168.0.168\data-kq /y;
         String kqCommandTxt = "xcopy " + "E:\\data-kq" + " " + BACKUPS_ADDRESS + " /y";
         log.info("开始备份数据-》指令为:" + kqCommandTxt);
-        log.info(ShareData.execCMD(kqCommandTxt));
+        log.info(ShareData.execCMD(kqCommandTxt));*/
 
         //释放资源【由于定时任务结束后不会自动释放List中数据，程序需要手动释放】list 本身为静态资源全局生成不会释放
         log.debug("释放资源" + "释放前长度为：" + info.size());

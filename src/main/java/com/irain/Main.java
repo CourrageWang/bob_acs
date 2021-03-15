@@ -55,6 +55,7 @@ public class Main {
         log.info("---------------程序开始执行-----------------");
         //加载配置文件
         new LoadConf();
+
         //每天的凌晨1点开始执行定时任务完成前一日考勤数据导入;
         new TimeTask().dayOfLoadSignData("01:00:10");
 
