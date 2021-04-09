@@ -59,7 +59,10 @@ public class DeviceInfo {
             } catch (IOException e) {
                 //连接异常或者读超时异常。
                 log.error(String.format("连接设备%s:%s出现异常", ip, port) + e.getMessage());
+                //跳过本次循环
+                return; //如果本次发生异常则跳出 不予执行后续动作
             }
+
             String recordPath = LoadConf.propertiesMap.get("READ_RECORD"); // 存储块区域的配置文件
 
             //从配置文件读取属性 不存在则从头开始读
