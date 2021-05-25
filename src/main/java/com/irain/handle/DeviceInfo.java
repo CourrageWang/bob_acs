@@ -154,10 +154,10 @@ public class DeviceInfo {
             }
 
             // 备份数据
-            String dkPath = "E:\\data-dk\\" + TimeUtils.getYearWithSeason() + " ";
-            String kqCommandTxt = "xcopy " + dkPath + BACKUPS_ADDRESS + "\\" + TimeUtils.getYearWithSeason() + "\\ " + " /y";
-            log.info("开始备份数据-》指令为:" + kqCommandTxt);
-            log.info(ShareData.execCMD(kqCommandTxt));
+//            String dkPath = "E:\\data-dk\\" + TimeUtils.getYearWithSeason() + " ";
+//            String kqCommandTxt = "xcopy " + dkPath + BACKUPS_ADDRESS + "\\" + TimeUtils.getYearWithSeason() + "\\ " + " /y";
+//            log.info("开始备份数据-》指令为:" + kqCommandTxt);
+//            log.info(ShareData.execCMD(kqCommandTxt));
 
             //结束关闭连接
             try {

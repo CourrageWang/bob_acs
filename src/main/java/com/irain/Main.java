@@ -1,6 +1,7 @@
 package com.irain;
 
 import com.irain.conf.LoadConf;
+import com.irain.handle.DeviceInfo;
 import com.irain.handle.InfoExection;
 import com.irain.utils.NetUtil;
 import com.irain.utils.TimeUtils;
@@ -15,10 +16,9 @@ import java.util.Map;
  */
 @Log4j
 public class Main {
-
     /**
      * 用户输入Ip地址和时间来导入打卡明细
-     * java -jar -p 127.0.0.1 -t 20200806
+     * java -jar -ip 127.0.0.1 -t 20200806
      *
      * @param args
      */
@@ -50,7 +50,7 @@ public class Main {
                 // 如导入20200701的数据 则输入日需要重新导入的日期。
                 // 将Ip地址塞入Map
                 devicesMap.put(ipAddress, ipAddress);
-                InfoExection.execute(devicesMap, loadData);
+                new DeviceInfo().loadAllDeviceData(devicesMap, loadData);
                 log.info("******获取考勤数据定时任务执行结束*******");
             }
         } else {
